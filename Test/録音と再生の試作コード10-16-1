@@ -198,8 +198,9 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     }
 }
 
+//グラフ化サブクラス
 class WaveformView: UIView {
-    var waveform: [CGFloat] = [] // 波形データを保持するプロパティ
+    var waveform: [CGFloat] = [] // 波形データを保持するプロパティ（振幅と時間の積分）
 
     override func draw(_ rect: CGRect) {
         super.draw(rect)
