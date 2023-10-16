@@ -3,7 +3,7 @@
 //  audioavocado -Test
 //
 //  Created by 吉田成秀 on 2023/10/16.
-//
+//ブラックボックス
 
 import Foundation
 import AVFoundation
@@ -14,7 +14,9 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     var audioPlayer: AVAudioPlayer!
     var isRecording = false
     
-    func ViewDidLoad() {
+    @IBOutlet weak var WaveText: UITextView!//デバック用のm4a出力確認text
+    
+    override func viewDidLoad() {
         super.viewDidLoad()
         setupAudioSession()
     }
@@ -37,11 +39,26 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
             self.playMusicFile()
         }
     }
+    
     @IBAction func stopMusicButtonAction(_ sender: Any) {
         stopRecording()
         stopPlayback()
         stopMusicFile()
+        
+        // 波形データを取得して表示
+        if let waveform = getWaveformFromAudioFile() {
+            print(waveform)
+            WaveText.text = "\(waveform)"//デバック用のm4a出力確認text
+            
+            let waveformView = WaveformView()
+            waveformView.frame = CGRect(x: 0, y: 0, width: 320, height: 200)
+            self.view.addSubview(waveformView)
+            waveformView.waveform = waveform
+        } else {
+            print("Failed to retrieve waveform data")
+        }
     }
+    
     @IBAction func startPlaybackButtonAction(_ sender: Any) {
         startPlayback()
     }
@@ -137,5 +154,80 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     func getDocumentsDirectory() -> URL {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         return paths[0]
+    }
+
+    func getWaveformFromAudioFile() -> [CGFloat]? {
+        let audioFileURL = getDocumentsDirectory().appendingPathComponent("recording.m4a")
+
+        if FileManager.default.fileExists(atPath: audioFileURL.path) {
+            // ファイルが存在する場合の処理
+            do {
+                let audioFile = try AVAudioFile(forReading: audioFileURL)
+                
+                // 以下のコードを続けて波形データを取得する
+            } catch {
+                print("Failed to open audio file: \(error)")
+            }
+        } else {
+            print("Audio file not found")
+        }
+
+        
+        do {
+            let audioFile = try AVAudioFile(forReading: audioFileURL)
+            
+            // サンプル数を取得
+            let totalSamples = audioFile.length
+            
+            // 波形データを取得
+            let format = audioFile.processingFormat
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(totalSamples))
+            
+            try audioFile.read(into: buffer!)
+            
+            // データを [CGFloat] に変換
+            let floatArray = Array(UnsafeBufferPointer(start: buffer?.floatChannelData![0], count: Int(buffer!.frameLength)))
+            
+            let cgFloatArray = floatArray.map { CGFloat($0) }
+            
+            return cgFloatArray
+        } catch {
+            print("Failed to get waveform data: \(error)")
+            return nil
+        }
+    }
+}
+
+class WaveformView: UIView {
+    var waveform: [CGFloat] = [] // 波形データを保持するプロパティ
+
+    override func draw(_ rect: CGRect) {
+        super.draw(rect)
+
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(rect)
+
+        context.setStrokeColor(UIColor.blue.cgColor)
+        context.setLineWidth(2.0)
+
+        let path = UIBezierPath()
+
+        let width = rect.size.width
+        let height = rect.size.height
+
+        for (index, amplitude) in waveform.enumerated() {
+            let x = CGFloat(index) / CGFloat(waveform.count) * width
+            let y = (1 - amplitude) * height
+            if index == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+
+        context.addPath(path.cgPath)
+        context.strokePath()
     }
 }
