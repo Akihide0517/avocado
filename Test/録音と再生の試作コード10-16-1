@@ -1,0 +1,141 @@
+//
+//  AudioController.swift
+//  audioavocado -Test
+//
+//  Created by 吉田成秀 on 2023/10/16.
+//
+
+import Foundation
+import AVFoundation
+import UIKit
+
+class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDelegate{
+    var audioRecorder: AVAudioRecorder!
+    var audioPlayer: AVAudioPlayer!
+    var isRecording = false
+    
+    func ViewDidLoad() {
+        super.viewDidLoad()
+        setupAudioSession()
+    }
+    
+    @IBAction func playMusicButtonAction(_ sender: Any) {
+        if AVAudioSession.sharedInstance().recordPermission == .undetermined {
+            // マイクへのアクセス許可がまだリクエストされていない場合
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                if granted {
+                    // マイクへのアクセスが許可された場合の処理
+                    self.startRecording()
+                    self.playMusicFile()
+                } else {
+                    // マイクへのアクセスが拒否された場合の処理
+                }
+            }
+        } else {
+            // すでにマイクへのアクセス許可が得られている場合
+            self.startRecording()
+            self.playMusicFile()
+        }
+    }
+    @IBAction func stopMusicButtonAction(_ sender: Any) {
+        stopRecording()
+        stopPlayback()
+        stopMusicFile()
+    }
+    @IBAction func startPlaybackButtonAction(_ sender: Any) {
+        startPlayback()
+    }
+    
+    func setupAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playAndRecord, mode: .default)
+            try session.setActive(true)
+        } catch {
+            print("Failed to set up audio session: \(error)")
+        }
+    }
+    
+    func startRecording() {
+        if !isRecording {
+            let audioSettings = [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: 44100.0,
+                AVNumberOfChannelsKey: 2,
+                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            ] as [String: Any]
+
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            } catch {
+                print("Failed to set up audio session: \(error)")
+            }
+
+            do {
+                audioRecorder = try AVAudioRecorder(url: getDocumentsDirectory().appendingPathComponent("recording.m4a"), settings: audioSettings)
+                audioRecorder.delegate = self
+                audioRecorder.prepareToRecord()
+                audioRecorder.record()
+                isRecording = true
+            } catch {
+                print("Failed to set up audio recorder: \(error)")
+            }
+        }
+    }
+    
+    func stopRecording() {
+        if isRecording {
+            audioRecorder.stop()
+            isRecording = false
+        }
+    }
+    
+    func startPlayback() {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: getDocumentsDirectory().appendingPathComponent("recording.m4a"))
+            audioPlayer.delegate = self
+            audioPlayer.play()
+        } catch {
+            print("Failed to set up audio player: \(error)")
+        }
+    }
+    
+    func stopPlayback() {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: getDocumentsDirectory().appendingPathComponent("recording.m4a"))
+            audioPlayer.delegate = self
+            audioPlayer.stop()
+        } catch {
+            print("Failed to set up audio player: \(error)")
+        }
+    }
+    
+    func playMusicFile() {
+        guard let url = Bundle.main.url(forResource: "10", withExtension: "mp3") else { return }
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer.delegate = self
+            audioPlayer.play()
+        } catch {
+            print("Failed to set up audio player: \(error)")
+        }
+    }
+    
+    func stopMusicFile() {
+        guard let url = Bundle.main.url(forResource: "10", withExtension: "mp3") else { return }
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer.delegate = self
+            audioPlayer.stop()
+        } catch {
+            print("Failed to set up audio player: \(error)")
+        }
+    }
+
+    func getDocumentsDirectory() -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        return paths[0]
+    }
+}
