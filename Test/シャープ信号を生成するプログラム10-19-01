@@ -1,0 +1,185 @@
+//
+//  FFTController.swift
+//  audioavocado -Test
+//
+//  Created by 吉田成秀 on 2023/10/19.
+//
+
+import Foundation
+import Accelerate
+import AVFoundation
+import UIKit
+import SwiftCSV
+
+class FFTController: UIViewController {
+    
+    var windowSize = 512
+    var duration = 5
+    var startFreq = 10.0 // Swiftで小数点が必要
+    var endFreq = 24000.0 // Swiftで小数点が必要
+    var sampleRate = 48000
+    var t: [Double] = []
+    var user_name = "FFTSound"
+    var nRepetitions = 10
+    var results: [[String]] = []
+    
+    var impulse_response: [DSPDoubleComplex] = []
+    var amp: [Double] = []
+    var phase: [Double] = []
+    var impulseResponseArrayNumbeer = 0
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // tを生成
+        t = stride(from: 0, to: duration, by: Int.Stride(1.0 / Double(sampleRate))).map { Double($0) }
+        
+        let R = log(endFreq / startFreq)
+        
+        // ハミング窓を生成
+        var window = [Double](repeating: 0.0, count: windowSize)
+        
+        for i in 0..<windowSize {
+            let value = 0.54 - 0.46 * cos(2.0 * Double.pi * Double(i) / Double(windowSize - 1))
+            window[i] = value
+        }
+        
+        let halfWindowSize = windowSize / 2
+        for i in 0..<halfWindowSize {
+            window[i] = 1.0
+        }
+        
+        for _ in 0..<nRepetitions {
+            // シャープ信号生成ロジック
+            var outputSignal = generateSharpSignal(duration: Double(duration), startFreq: startFreq, endFreq: endFreq, sampleRate: sampleRate)
+            
+            // Impulse Responseを生成
+            let envelope = t.map { exp($0 * R / Double(duration)) }
+            outputSignal = outputSignal.reversed() // 出力信号を逆順にする
+            let correctedSignal = zip(outputSignal, envelope).map { $0.0 / $0.1 }
+            
+            // Impulse Response処理
+            
+            // FFTを実行
+            var responseWithWindow = [DSPDoubleComplex](repeating: DSPDoubleComplex(), count: windowSize)
+            let FFTSetup = vDSP_create_fftsetupD(vDSP_Length(log2(Double(windowSize))), FFTRadix(kFFTRadix2))
+            
+            // メモリを確保して DSPDoubleSplitComplex の配列を作成
+            var impulseResponseFFT = [DSPDoubleSplitComplex](repeating: DSPDoubleSplitComplex(realp: UnsafeMutablePointer<Double>.allocate(capacity: windowSize), imagp: UnsafeMutablePointer<Double>.allocate(capacity: windowSize)), count: windowSize)
+            vDSP_ctozD(responseWithWindow, 2, &impulseResponseFFT, 1, vDSP_Length(windowSize))
+            vDSP_fft_zipD(FFTSetup!, &impulseResponseFFT, 1, vDSP_Length(windowSize), FFTDirection(FFT_FORWARD))
+            
+            // impulseResponseFFTを適切な配列に変換
+            let impulseResponseArray = Array(UnsafeBufferPointer(start: impulseResponseFFT, count: windowSize))
+            impulseResponseArrayNumbeer = impulseResponseArray.count
+            
+            // amp, phase, phaseInDegreesを計算
+            amp = impulse_response.map { sqrt($0.real * $0.real + $0.imag * $0.imag) }
+            phase = impulseResponseArray.map { atan2($0.imagp.pointee, $0.realp.pointee) }
+            let phaseInDegrees = phase.map { $0 * (180.0 / .pi) }
+            
+            // メモリ解放
+            vDSP_destroy_fftsetupD(FFTSetup)
+            
+            // impulseResponseFFT 配列の各要素のメモリを解放
+            for i in 0..<impulseResponseFFT.count {
+                impulseResponseFFT[i].realp.deallocate()
+                impulseResponseFFT[i].imagp.deallocate()
+            }
+            
+            for i in 0..<amp.count {
+                // ユーザー名にインデックスを追加
+                let combined_result = [user_name + "_\(i + 1)"] + amp.map { String($0) } + phase.map { String($0) } + correctedSignal.map { String($0) }
+                results.append(combined_result)
+            }
+        }
+        
+        for i in 0..<nRepetitions {
+            // ユーザー名を生成
+            let user_name = "User\(i + 1)"
+            
+            // データを組み合わせた結果データ
+            let ampStrings = amp.map { String($0) }
+            let phaseStrings = phase.map { String($0) }
+            let impulseResponseStrings = impulse_response.map { "\($0.real),\($0.imag)" } // 例: "0.5,0.7"
+
+            let combined_result = [user_name] + ampStrings + phaseStrings + impulseResponseStrings
+            results.append(combined_result)
+        }
+        
+        // CSVファイルに結果データを書き込み
+        let col_names = ["Name"] + (0..<amp.count).map { "Amp_Freq_\($0)" } + (0..<phase.count).map { "Phase_Freq_\($0)" } + (0..<impulseResponseArrayNumbeer).map { "Impulse_Signal_\($0)" }
+        let filename = "alltaste.csv"
+        
+        let fileManager = FileManager.default
+        let documentDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let csvFilePath = documentDirectory.appendingPathComponent(filename)
+            
+            // CSVファイルに書き込むデータを準備
+            var csvText = "id,name,age\n" // ヘッダー行
+            
+            for (_, row) in results.enumerated() {
+                let user_name = "User\(col_names)"
+                
+                // "id," "name," "age" 列を持つCSV行を構築
+                let csvRow = "\(user_name),\(results)\n"
+                csvText.append(csvRow)
+            }
+            
+            if let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                let csvFilePath = documentDirectory.appendingPathComponent(filename)
+                
+                do {
+                    try csvText.write(to: csvFilePath, atomically: true, encoding: .utf8)
+                    print("CSVファイルは \(csvFilePath.path) に正常に保存されました")
+                } catch {
+                    print("CSVファイルの書き込みエラー: \(error.localizedDescription)")
+                }
+            }
+            
+            // CSVファイルを読み取る
+            if let csvData = readCSVFile(atPath: filename) {
+                for row in csvData {
+                    let rowData = row.joined(separator: "\t") // タブ区切りの値にする場合は "\t" を使用
+                    print(rowData)
+                }
+            }
+        // CSVファイルに結果データを書き込みここまで
+    }
+    
+    func generateSharpSignal(duration: Double, startFreq: Double, endFreq: Double, sampleRate: Int) -> [Double] {
+        var signal: [Double] = []
+        
+        let numSamples = Int(duration * Double(sampleRate))
+        let deltaFreq = (endFreq - startFreq) / duration
+        
+        for n in 0..<numSamples {
+            let t = Double(n) / Double(sampleRate)
+            let frequency = startFreq + deltaFreq * t
+            let sample = sin(2 * .pi * frequency * t)
+            signal.append(sample)
+        }
+        
+        return signal
+    }
+        
+    // CSVファイルからデータを読み取る関数
+    func readCSVFile(atPath filePath: String) -> [[String]]? {
+        do {
+            let contents = try String(contentsOfFile: filePath, encoding: .utf8)
+            let rows = contents.components(separatedBy: "\n")
+            var data: [[String]] = []
+                                                         
+            for row in rows {
+                let columns = row.components(separatedBy: ",")
+                data.append(columns)
+            }
+                                                         
+            return data
+            } catch {
+                print("CSVファイルの読み込みエラー: \(error.localizedDescription)")
+                return nil
+            }
+    }
+}
+
