@@ -3,11 +3,11 @@
 //  audioavocado -Test
 //
 //  Created by 吉田成秀 on 2023/10/16.
-//ブラックボックス
 
 import Foundation
 import AVFoundation
 import UIKit
+import Dispatch
 
 class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDelegate{
     var audioRecorder: AVAudioRecorder!
@@ -29,6 +29,15 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
                     // マイクへのアクセスが許可された場合の処理
                     self.startRecording()
                     self.playMusicFile()
+                    
+                    let delayInSeconds: Double = 5.0
+                    let delayQueue = DispatchQueue.global(qos: .userInitiated)
+
+                    delayQueue.asyncAfter(deadline: .now() + delayInSeconds) {
+                        // 5秒後に実行したいコードをここに書きます
+                        print("5秒後に実行されました")
+                        self.dilayStopMusic()
+                    }
                 } else {
                     // マイクへのアクセスが拒否された場合の処理
                 }
@@ -37,14 +46,19 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
             // すでにマイクへのアクセス許可が得られている場合
             self.startRecording()
             self.playMusicFile()
+            
+            let delayInSeconds: Double = 5.0
+            let delayQueue = DispatchQueue.global(qos: .userInitiated)
+
+            delayQueue.asyncAfter(deadline: .now() + delayInSeconds) {
+                // 5秒後に実行したいコードをここに書きます
+                print("5秒後に実行されました")
+                self.dilayStopMusic()
+            }
         }
     }
     
-    @IBAction func stopMusicButtonAction(_ sender: Any) {
-        stopRecording()
-        stopPlayback()
-        stopMusicFile()
-        
+    @IBAction func makeWavegraphButtonAction(_ sender: Any) {
         // 波形データを取得して表示
         if let waveform = getWaveformFromAudioFile() {
             print(waveform)
@@ -61,6 +75,12 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     
     @IBAction func startPlaybackButtonAction(_ sender: Any) {
         startPlayback()
+    }
+    
+    func dilayStopMusic(){
+        stopRecording()
+        stopPlayback()
+        stopMusicFile()
     }
     
     func setupAudioSession() {
@@ -130,7 +150,7 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     }
     
     func playMusicFile() {
-        guard let url = Bundle.main.url(forResource: "10", withExtension: "mp3") else { return }
+        guard let url = Bundle.main.url(forResource: "sweep_sound", withExtension: "wav") else { return }
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer.delegate = self
@@ -198,7 +218,7 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     }
 }
 
-//グラフ化サブクラス
+//waveグラフ化
 class WaveformView: UIView {
     var waveform: [CGFloat] = [] // 波形データを保持するプロパティ（振幅と時間の積分）
 
