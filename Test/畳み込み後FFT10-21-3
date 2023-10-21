@@ -1,4 +1,3 @@
-...swift
 
 //
 //  FFTController.swift
@@ -196,4 +195,4 @@ class FFTController: UIViewController {
             return magnitudes
         }
 }
-```
+
