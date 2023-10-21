@@ -22,6 +22,25 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
         setupAudioSession()
     }
     
+    @IBAction func Test1(_ sender: Any) {
+        Level = false
+    }
+    @IBAction func Test2(_ sender: Any) {
+        Level = true
+    }
+    
+    @IBOutlet weak var peakModeSwitch: UISwitch!
+
+        @IBAction func switchValueChanged(_ sender: UISwitch) {
+            if sender.isOn {
+                // UISwitchがオンの場合
+                peakMode = true
+            } else {
+                // UISwitchがオフの場合
+                peakMode = false
+            }
+        }
+    
     @IBAction func playMusicButtonAction(_ sender: Any) {
         if AVAudioSession.sharedInstance().recordPermission == .undetermined {
             // マイクへのアクセス許可がまだリクエストされていない場合
@@ -63,11 +82,15 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
         // 波形データを取得して表示
         if let waveform = getWaveformFromAudioFile() {
             let reversedData = reverseCGFloatArray(waveform)
-            print("waveform:\(waveform)")
-            print("reversedData:\(reversedData)")
+            //print("waveform:\(waveform)")
+            //print("reversedData:\(reversedData)")
             
-            WaveText.text = "\(waveform)"//デバック用のm4a出力確認text
-            ReverseWaveText.text = "\(reversedData)"
+            //WaveText.text = "\(waveform)"//デバック用のm4a出力確認text
+            //ReverseWaveText.text = "\(reversedData)"
+            
+            //継承
+            wave = waveform
+            reversewave = reversedData
             
             let waveformView = WaveformView()
             waveformView.frame = CGRect(x: 0, y: 0, width: 320, height: 200)
@@ -180,7 +203,7 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     }
     
     func playMusicFile() {
-        guard let url = Bundle.main.url(forResource: "sweep_sound", withExtension: "wav") else { return }
+        guard let url = Bundle.main.url(forResource: "swept_sine", withExtension: "wav") else { return }
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer.delegate = self
