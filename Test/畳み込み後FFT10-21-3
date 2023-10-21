@@ -29,11 +29,11 @@ class FFTController: UIViewController {
             print("convolution end")
             
             // ピークの位置を見つける
-            let peakIndices = findPeaks(convolutionResult)
+            let peakIndices = findPeaks(convolutionResult)!
             print("peakIndices end")
             
             // ピークを中心にデータポイントを取り出しFFT（48000個）
-            let extractedData = extractDataAroundPeaks(convolutionResult, peakIndices: peakIndices, dataPointsCount: 48000)
+            let extractedData = extractDataAroundPeaks(convolutionResult, peakIndex: peakIndices, dataPointsCount: 48000)
             let fftResult = performFFT(on: extractedData)
             print("extractedData end")
             
@@ -62,13 +62,15 @@ class FFTController: UIViewController {
             print("elementwiseMultiplication end")
             
             // ピークの位置を見つける
-            let peakIndices = findPeaks(convolutionResult)
+            let peakIndices = findPeaks(convolutionResult)!
             print("peakIndices end")
             
-            // ピークを中心にデータポイントを取り出しFFT（48000個）
-            let extractedData = extractDataAroundPeaks(convolutionResult, peakIndices: peakIndices, dataPointsCount: 48000)
-            let fftResult = performFFT(on: extractedData)
+            // ピークを中心にデータポイントを取り出しFFT（初期値48000個）
+            let extractedData = extractDataAroundPeaks(convolutionResult, peakIndex: peakIndices, dataPointsCount: 48000)
             print("extractedData end")
+            
+            let fftResult = performFFT(on: extractedData)
+            print("fftResult end")
             
             // Prepare data for the chart
             var entries: [ChartDataEntry] = []
@@ -133,31 +135,42 @@ class FFTController: UIViewController {
     
     //不明な所ここまで
     
-    func findPeaks(_ data: [CGFloat]) -> [Int] {
+    func findPeaks(_ data: [CGFloat]) -> Int? {
+        guard !data.isEmpty else {
+            return nil // データが空の場合は nil を返すか、エラー処理を追加することができます
+        }
+
         var peakIndices = [Int]()
-        
+
         for i in 1..<data.count - 1 {
             if data[i] > data[i - 1] && data[i] > data[i + 1] {
                 peakIndices.append(i)
             }
         }
-        
-        return peakIndices
+
+        if let maxPeakIndex = peakIndices.max() {
+            return maxPeakIndex
+        } else {
+            return nil // ピークが見つからない場合は nil を返すか、エラー処理を追加することができます
+        }
     }
 
-    func extractDataAroundPeaks(_ data: [CGFloat], peakIndices: [Int], dataPointsCount: Int) -> [CGFloat] {
+    func extractDataAroundPeaks(_ data: [CGFloat], peakIndex: Int, dataPointsCount: Int) -> [CGFloat] {
+        let segmentCount = dataPointsCount / 2
         var extractedData = [CGFloat]()
         
-        for peakIndex in peakIndices {
-            let startIndex = max(0, peakIndex - dataPointsCount / 2)
-            let endIndex = min(data.count - 1, startIndex + dataPointsCount - 1)
-            let extractedSegment = Array(data[startIndex...endIndex])
-            extractedData.append(contentsOf: extractedSegment)
+        let startIndex = Int(max(0, peakIndex - segmentCount))
+        let endIndex = Int(min(data.count - 1, peakIndex + segmentCount))
+        
+        // ピークの周りのデータを抽出して連結
+        if startIndex <= endIndex {
+            let segmentData = Array(data[startIndex...endIndex])
+            extractedData.append(contentsOf: segmentData)
         }
         
         return extractedData
     }
-    
+
     func performFFT(on data: [CGFloat]) -> [Double] {
             var realPart = [Double](repeating: 0.0, count: data.count)
             var imaginaryPart = [Double](repeating: 0.0, count: data.count)
@@ -181,4 +194,3 @@ class FFTController: UIViewController {
             return magnitudes
         }
 }
-
