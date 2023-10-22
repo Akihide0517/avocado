@@ -1,3 +1,93 @@
+<!-- 超高速化仕様(GPU) -->
+
+import Metal
+import MetalKit
+
+func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
+        // Metalデバイスの初期化
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            fatalError("Metal is not supported on this device.")
+        }
+
+        // Metalコマンドキューの作成
+        let commandQueue = device.makeCommandQueue()
+
+        // シグナルデータ (CGFloatからFloatに変換)
+        let signal1: [Float] = signal1.map { Float($0) }
+        let signal2: [Float] = signal2.map { Float($0) }
+
+        // シグナルデータをMetalバッファに転送
+        let signal1Buffer = device.makeBuffer(bytes: signal1, length: signal1.count * MemoryLayout<Float>.stride, options: [])
+        let signal2Buffer = device.makeBuffer(bytes: signal2, length: signal2.count * MemoryLayout<Float>.stride, options: [])
+
+        // 出力用のバッファを作成
+        let outputLength = signal1.count + signal2.count - 1
+        let resultBuffer = device.makeBuffer(length: outputLength * MemoryLayout<Float>.stride, options: [])
+
+        // カスタムMetalシェーダーを記述
+        let shaderSource = """
+        #include <metal_stdlib>
+        using namespace metal;
+
+        kernel void convolutionKernel(device float* signal1 [[ buffer(0) ]],
+                                     device float* signal2 [[ buffer(1) ]],
+                                     device float* result [[ buffer(2) ]],
+                                     uint gid [[ thread_position_in_grid ]]) {
+            int m = signal1->get_length();
+            int n = signal2->get_length();
+            int outputLength = m + n - 1;
+
+            float4 simdResult = float4(0.0, 0.0, 0.0, 0.0);
+
+            for (int j = 0; j < m; ++j) {
+                int idx = int(gid) - j;
+                if (idx >= 0 && idx < n) {
+                    float4 signal1Value = float4(signal1[j]);
+                    float4 signal2Value = float4(signal2[idx]);
+                    simdResult += signal1Value * signal2Value;
+                }
+            }
+
+            result[int(gid)] = simdResult.x + simdResult.y + simdResult.z + simdResult.w;
+        }
+        """
+
+        // Metalライブラリを作成
+        let library = try! device.makeLibrary(source: shaderSource, options: nil)
+        let kernelFunction = (library.makeFunction(name: "convolutionKernel"))!
+        let pipelineState = try! device.makeComputePipelineState(function: kernelFunction)
+
+        // コマンドバッファとエンコーダーの作成
+        let commandBuffer = commandQueue!.makeCommandBuffer()
+        let computeEncoder = commandBuffer!.makeComputeCommandEncoder()
+
+        // シェーダーの設定
+        computeEncoder!.setComputePipelineState(pipelineState)
+        computeEncoder!.setBuffer(signal1Buffer, offset: 0, index: 0)
+        computeEncoder!.setBuffer(signal2Buffer, offset: 0, index: 1)
+        computeEncoder!.setBuffer(resultBuffer, offset: 0, index: 2)
+
+        // スレッドグループとスレッド数の設定
+        let threadsPerThreadgroup = MTLSize(width: 256, height: 1, depth: 1)
+        let threadgroupsPerGrid = MTLSize(width: (outputLength + threadsPerThreadgroup.width - 1) / threadsPerThreadgroup.width, height: 1, depth: 1)
+
+        // シェーダーの実行
+        computeEncoder!.dispatchThreadgroups(threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
+        computeEncoder!.endEncoding()
+
+        // コマンドバッファの実行
+        commandBuffer!.commit()
+        commandBuffer!.waitUntilCompleted()
+
+        // 結果の取得 (FloatからCGFloatに変換)
+        var outputData = [CGFloat](repeating: 0, count: outputLength)
+        var outputFloatData = [Float](repeating: 0, count: outputLength)
+        memcpy(&outputFloatData, resultBuffer!.contents(), outputLength * MemoryLayout<Float>.stride)
+        outputData = outputFloatData.map { CGFloat($0) }
+        
+        return outputData
+    }
+
 <!-- 超高速化仕様（精度犠牲） -->
 import Dispatch
 import simd
