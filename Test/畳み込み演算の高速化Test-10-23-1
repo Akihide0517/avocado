@@ -1,0 +1,102 @@
+<!-- 超高速化仕様（精度犠牲） -->
+import Dispatch
+import simd
+
+func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
+        let m = signal1.count
+        let n = signal2.count
+        let outputLength = m + n - 1
+
+        var result = [CGFloat](repeating: 0, count: outputLength)
+
+        let concurrentQueue = DispatchQueue(label: "convolutionQueue", attributes: .concurrent)
+        
+        DispatchQueue.concurrentPerform(iterations: outputLength) { i in
+            var simdResult = float4(0.0, 0.0, 0.0, 0.0) // Use SIMD float4 for vectorized operations
+            for j in 0..<m {
+                if i - j >= 0 && i - j < n {
+                    let signal1Value = float4(Float(signal1[j]))
+                    let signal2Value = float4(Float(signal2[i - j]))
+                    simdResult += signal1Value * signal2Value
+                }
+                print("simdResult_End_\(j)")
+            }
+            print("simdResult_All_End")
+            
+            // Apply pruning by comparing each element to the threshold
+            let threshold: Float = 0.001
+            for index in 0..<4 {
+                if simdResult[index] < threshold {
+                    simdResult[index] = 0.0
+                }
+                print("simdResult[index]_End_\(index)")
+            }
+            print("simdResult[index]_All_End")
+            
+            // Apply quantization to reduce precision
+            let quantizationFactor: Float = 0.1
+            simdResult = round(simdResult / quantizationFactor) * quantizationFactor
+            
+            concurrentQueue.async(flags: .barrier) {
+                result[i] = CGFloat(simdResult.x + simdResult.y + simdResult.z + simdResult.w)
+            }
+        }
+
+        return result
+    }
+
+<!-- 高速化仕様(謎機能) -->
+import Dispatch
+import simd
+
+func parallelConvolutionWithSIMD(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
+    let m = signal1.count
+    let n = signal2.count
+    let outputLength = m + n - 1
+
+    var result = [CGFloat](repeating: 0, count: outputLength)
+
+    let concurrentQueue = DispatchQueue(label: "convolutionQueue", attributes: .concurrent)
+    
+    DispatchQueue.concurrentPerform(iterations: outputLength) { i in
+        var simdResult = float4(0.0, 0.0, 0.0, 0.0) // Use SIMD float4 for vectorized operations
+        for j in 0..<m {
+            if i - j >= 0 && i - j < n {
+                let signal1Value = float4(Float(signal1[j]))
+                let signal2Value = float4(Float(signal2[i - j]))
+                simdResult += signal1Value * signal2Value
+            }
+        }
+        concurrentQueue.async(flags: .barrier) {
+            result[i] = CGFloat(simdResult.x + simdResult.y + simdResult.z + simdResult.w)
+        }
+    }
+
+    return result
+}
+
+<!-- 高速化仕様(マルチスレッド) -->
+import Dispatch
+
+func parallelConvolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
+    let m = signal1.count
+    let n = signal2.count
+    let outputLength = m + n - 1
+
+    var result = [CGFloat](repeating: 0, count: outputLength)
+
+    let concurrentQueue = DispatchQueue(label: "convolutionQueue", attributes: .concurrent)
+    
+    DispatchQueue.concurrentPerform(iterations: outputLength) { i in
+        for j in 0..<m {
+            if i - j >= 0 && i - j < n {
+                let product = signal1[j] * signal2[i - j]
+                concurrentQueue.async(flags: .barrier) {
+                    result[i] += product
+                }
+            }
+        }
+    }
+
+    return result
+}
