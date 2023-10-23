@@ -236,3 +236,51 @@ func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
 
         return result
     }
+
+//追記
+    func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat], blockSize: Int) -> [CGFloat] {
+        let m = signal1.count
+        let n = signal2.count
+        let outputLength = m + n - 1
+        
+        var result = [CGFloat](repeating: 0, count: outputLength)
+        
+        let concurrentQueue = DispatchQueue(label: "convolutionQueue", attributes: .concurrent)
+        
+        DispatchQueue.concurrentPerform(iterations: outputLength) { i in
+            for j in stride(from: 0, to: m, by: blockSize) {
+                if i - j >= 0 && i - j < n {
+                    let blockEnd = min(j + blockSize, m)
+                    var block1 = Array(signal1[j..<blockEnd])
+                    let block2Start = i - j
+                    let block2End = min(block2Start + blockSize, n)
+                    var block2 = Array(signal2[block2Start..<block2End])
+                    
+                    // Zero-padding
+                    block1 += Array(repeating: 0, count: blockSize - block1.count)
+                    block2 += Array(repeating: 0, count: blockSize - block2.count)
+                    
+                    // Apply FFT
+                    var fftBlock1 = fft(block1)
+                    let fftBlock2 = fft(block2)
+                    
+                    // Multiply in frequency domain (i.e., convolution in time domain)
+                    for k in 0..<blockSize {
+                        fftBlock1[k] *= fftBlock2[k]
+                    }
+                    
+                    // Apply IFFT and add to the result
+                    let ifftBlock = ifft(fftBlock1)
+                    concurrentQueue.async(flags: .barrier) {
+                        for k in 0..<blockSize {
+                            if i + k < result.count {
+                                result[i + k] += ifftBlock[k]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return result
+    }
