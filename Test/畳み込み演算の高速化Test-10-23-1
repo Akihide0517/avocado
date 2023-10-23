@@ -191,7 +191,7 @@ func parallelConvolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat
     return result
 }
 
-//追記
+<超高速化(マルチスレッド＋aimd)>
 func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
         let m = signal1.count
         let n = signal2.count
