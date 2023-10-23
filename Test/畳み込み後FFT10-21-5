@@ -9,6 +9,9 @@ import Foundation
 import UIKit
 import Accelerate
 import DGCharts
+import Dispatch
+import simd
+import TensorSwift
 
 class FFTController: UIViewController {
     var chartView: LineChartView!
@@ -23,18 +26,24 @@ class FFTController: UIViewController {
         view.addSubview(chartView)
         print("Create the LineChartView end")
         
+        if(wave.count <= 0){
+            wave = [1,1,1,1,1,1,1,1,1,1,1]
+            reversewave = [2,2,2,2,2,2,2,2,2,2,2]
+        }
+        
         if(Level == false){
             // 畳み込まれた結果のデータ
-            let convolutionResult = [CGFloat](convolution(wave, reversewave))
-            print("convolution end")
+            print("wave:",wave.count)
+            let convolutionResult = (overlapAddConvolution(signal1: wave.map { Float($0) }, signal2: reversewave.map { Float($0) }, blockSize: 200))
+            print("convolution end",convolutionResult.count)
             
             // ピークの位置を見つける
-            let peakIndices = findPeaks(convolutionResult)!
+            let peakIndices = findPeaks(convolutionResult.map { CGFloat($0) })!
             print("peakIndices end")
             
             // ピークを中心にデータポイントを取り出しFFT（48000個）
             if(!peakMode){
-                let extractedData = extractDataAroundPeaks(convolutionResult, peakIndex: peakIndices, dataPointsCount: 48000)
+                let extractedData = extractDataAroundPeaks(convolutionResult.map { CGFloat($0) }, peakIndex: peakIndices, dataPointsCount: 48000)
                 print("extractedData end")
                 
                 let fftResult = performFFT(on: extractedData)
@@ -61,7 +70,7 @@ class FFTController: UIViewController {
                 chartView.data = data
                 print("all opend!")
             }else{
-                let extractedData = extractDataAfterPeak(convolutionResult, peakIndex: peakIndices, dataPointsCount: 48000)
+                let extractedData = extractDataAfterPeak(convolutionResult.map { CGFloat($0) }, peakIndex: peakIndices, dataPointsCount: 48000)
                 print("extractedData end")
                 
                 let fftResult = performFFT(on: extractedData)
@@ -154,30 +163,79 @@ class FFTController: UIViewController {
                 print("all opend!")
             }
         }
+        
+        let currentDate = Date()  // 現在の日時を取得
+        let dateFormatter = DateFormatter()
+
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"  // 任意の日付/時間フォーマットを指定
+        let formattedDate = dateFormatter.string(from: currentDate)
+
+        print("現在の時刻は: \(formattedDate)")
     }
     
     //以下どちらが正解か不明なため二つ手段を書いておく
     
-    //畳み込み
-    func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
+    func convolution(signal1: [Float], signal2: [Float]) -> [Float] {
         let m = signal1.count
         let n = signal2.count
         let outputLength = m + n - 1
         
-        var result = [CGFloat](repeating: 0, count: outputLength)
+        var result = [Float](repeating: 0.0, count: outputLength)
+        var signal1Padded = signal1 + [Float](repeating: 0.0, count: outputLength - m)
+        let signal2Reversed = Array(signal2.reversed())
         
-        for i in 0..<outputLength {
-            for j in 0..<m {
-                if i - j >= 0 && i - j < n {
-                    result[i] += signal1[j] * signal2[i - j]
-                }
-            }
-            print("this outputLength end\(i)")
-        }
+        vDSP_conv(signal1Padded, 1, signal2Reversed, 1, &result, 1, vDSP_Length(outputLength), vDSP_Length(n))
+        print("convolution() end",result.count)
         
         return result
     }
+
+    func overlapAddConvolution(signal1: [Float], signal2: [Float], blockSize: Int) -> [Float] {
+        let m = signal1.count
+        let n = signal2.count
+        let outputLength = m + n - 1
+
+        var result = [Float](repeating: 0.0, count: outputLength)
+
+        var index = 0
+        while index < m {
+            let blockEnd = min(index + blockSize, m)
+            let currentBlockSize = blockEnd - index
+            var block1 = Array(signal1[index..<index + currentBlockSize])
+            var block2 = Array(signal2[index..<index + currentBlockSize])
+
+            // Apply convolution for the current block
+            let blockResult = convolution(signal1: block1, signal2: block2)
+
+            // Add the block result to the overall result with overlap
+            for j in 0..<currentBlockSize {
+                result[index + j] += blockResult[j]
+            }
+
+            index += currentBlockSize
+        }
+
+        // Trim the result to the original output length
+        let trimmedResult = Array(result.prefix(outputLength))
+        print("overlapAddConvolution end",trimmedResult.count)
+
+        return inverseConvolution(signal: trimmedResult, kernel: signal2)
+    }
     
+    func inverseConvolution(signal: [Float], kernel: [Float]) -> [Float] {
+        let signalLength = signal.count
+        let kernelLength = kernel.count
+        let outputLength = signalLength + kernelLength - 1
+        
+        var result = [Float](repeating: 0.0, count: outputLength)
+        
+        // Apply inverse convolution using Fourier transform
+        vDSP_conv(signal, 1, kernel, 1, &result, 1, vDSP_Length(outputLength), vDSP_Length(kernelLength))
+        print("inverseConvolution end",result.count)
+        
+        return result
+    }
+
     //掛け算
     func elementwiseMultiplication(_ array1: [CGFloat], _ array2: [CGFloat]) -> [CGFloat] {
         // 2つの配列の要素数が異なる場合はエラーを処理する必要があります
@@ -270,4 +328,3 @@ class FFTController: UIViewController {
             return magnitudes
         }
 }
-
