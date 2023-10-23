@@ -237,7 +237,7 @@ func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat]) -> [CGFloat] {
         return result
     }
 
-//追記
+<!-- overlap Add + FFT -->
     func convolution(_ signal1: [CGFloat], _ signal2: [CGFloat], blockSize: Int) -> [CGFloat] {
         let m = signal1.count
         let n = signal2.count
