@@ -1,3 +1,66 @@
+<!-- 現在の使用(overlap add + brock + FFT + IFFT) -->
+func convolution(signal1: [Float], signal2: [Float]) -> [Float] {
+        let m = signal1.count
+        let n = signal2.count
+        let outputLength = m + n - 1
+        
+        var result = [Float](repeating: 0.0, count: outputLength)
+        var signal1Padded = signal1 + [Float](repeating: 0.0, count: outputLength - m)
+        let signal2Reversed = Array(signal2.reversed())
+        
+        vDSP_conv(signal1Padded, 1, signal2Reversed, 1, &result, 1, vDSP_Length(outputLength), vDSP_Length(n))
+        print("convolution() end",result.count)
+        
+        return result
+    }
+
+    func overlapAddConvolution(signal1: [Float], signal2: [Float], blockSize: Int) -> [Float] {
+        let m = signal1.count
+        let n = signal2.count
+        let outputLength = m + n - 1
+
+        var result = [Float](repeating: 0.0, count: outputLength)
+
+        var index = 0
+        while index < m {
+            let blockEnd = min(index + blockSize, m)
+            let currentBlockSize = blockEnd - index
+            var block1 = Array(signal1[index..<index + currentBlockSize])
+            var block2 = Array(signal2[index..<index + currentBlockSize])
+
+            // Apply convolution for the current block
+            let blockResult = convolution(signal1: block1, signal2: block2)
+
+            // Add the block result to the overall result with overlap
+            for j in 0..<currentBlockSize {
+                result[index + j] += blockResult[j]
+            }
+
+            index += currentBlockSize
+        }
+
+        // Trim the result to the original output length
+        let trimmedResult = Array(result.prefix(outputLength))
+        print("overlapAddConvolution end",trimmedResult.count)
+
+        return inverseConvolution(signal: trimmedResult, kernel: signal2)
+    }
+    
+    func inverseConvolution(signal: [Float], kernel: [Float]) -> [Float] {
+        let signalLength = signal.count
+        let kernelLength = kernel.count
+        let outputLength = signalLength + kernelLength - 1
+        
+        var result = [Float](repeating: 0.0, count: outputLength)
+        
+        // Apply inverse convolution using Fourier transform
+        vDSP_conv(signal, 1, kernel, 1, &result, 1, vDSP_Length(outputLength), vDSP_Length(kernelLength))
+        print("inverseConvolution end",result.count)
+        
+        return result
+    }
+
+
 <!-- 超高速化仕様(GPU) -->
 
 import Metal
