@@ -8,18 +8,68 @@ import Foundation
 import AVFoundation
 import UIKit
 import Dispatch
+import DGCharts
 
 class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDelegate{
     var audioRecorder: AVAudioRecorder!
     var audioPlayer: AVAudioPlayer!
     var isRecording = false
     
+    // チャート
+    var chartView: LineChartView!
+    // チャートデータ
+    var lineDataSet: LineChartDataSet!
+    
     @IBOutlet weak var ReverseWaveText: UITextView!
     @IBOutlet weak var WaveText: UITextView!//デバック用のm4a出力確認text
+    @IBOutlet weak var volumeStepper: UIStepper?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupAudioSession()
+    }
+    
+    func drawChart(y: [Double]) {
+        if(chartView != nil){
+            chartView.removeFromSuperview()
+        }
+        
+        // チャートビューのサイズと位置を定義
+        self.chartView = LineChartView(frame: CGRect(x: 0, y: 0, width: self.view.frame.width, height: 200))
+        
+        // チャートに渡す用の配列を定義
+        var dataEntries: [ChartDataEntry] = []
+        
+        // Y軸のデータリストからインデックスと値を取得し配列に格納
+        for (index, value) in y.enumerated() {
+            // X軸は配列のインデックス番号
+            let dataEntry = ChartDataEntry(x: Double(index), y: value)
+            dataEntries.append(dataEntry)
+        }
+
+        var entries: [ChartDataEntry] = []
+        for (index, magnitude) in y.enumerated() {
+            let entry = ChartDataEntry(x: Double(index), y: magnitude)
+            entries.append(entry)
+        }
+        
+        // 折れ線グラフ用のデータセット labelはデータの説明ラベル
+        lineDataSet = LineChartDataSet(entries: entries, label: "")
+        // グラフに反映
+        chartView.data = LineChartData(dataSet: lineDataSet)
+
+         // MARK: - ここからグラフデザイン設定
+        
+        chartView.xAxis.labelPosition = .bottom
+        chartView.rightAxis.enabled = false
+        lineDataSet.drawCirclesEnabled = false
+
+        self.view.addSubview(self.chartView)
+    }
+    
+    @IBAction func volumeStepperValueChanged(_ sender: UIStepper) {
+        let newVolume = Float(sender.value) // ステッパーの値を取得
+        audioPlayer?.volume = newVolume // AVAudioPlayerの音量を設定
     }
     
     @IBAction func Test1(_ sender: Any) {
@@ -38,6 +88,30 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
             } else {
                 // UISwitchがオフの場合
                 peakMode = false
+            }
+        }
+    
+    @IBOutlet weak var peakDirSwitch: UISwitch!
+
+        @IBAction func peakDirswitchValueChanged(_ sender: UISwitch) {
+            if sender.isOn {
+                // UISwitchがオンの場合
+                peakDir = true
+            } else {
+                // UISwitchがオフの場合
+                peakDir = false
+            }
+        }
+    
+    @IBOutlet weak var graphModeSwitch: UISwitch!
+
+        @IBAction func graphModeValueChanged(_ sender: UISwitch) {
+            if sender.isOn {
+                // UISwitchがオンの場合
+                graphMode = true
+            } else {
+                // UISwitchがオフの場合
+                graphMode = false
             }
         }
     
@@ -78,6 +152,32 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
         }
     }
     
+    @IBAction func saveSweep(_ sender: Any) {
+        guard let wavURL = Bundle.main.url(forResource: "swept_sine", withExtension: "wav") else {
+            fatalError("WAVファイルが見つかりません")
+        }
+
+        do {
+            let audioFile = try AVAudioFile(forReading: wavURL)
+            let format = audioFile.processingFormat
+            let frameCount = UInt32(audioFile.length)
+            
+            // サンプルデータを読み込むためのバッファを作成
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
+            
+            try audioFile.read(into: buffer!)
+            
+            // サンプルデータを[CGFloat]に変換
+            let floatArray = Array(UnsafeBufferPointer(start: buffer!.floatChannelData?[0], count: Int(frameCount)))
+            
+            // ここでfloatArrayを使用して必要な処理を行います
+            reversewave = reverseCGFloatArray(floatArray.map { CGFloat($0) })
+            
+        } catch {
+            fatalError("WAVファイルの読み込みに失敗しました: \(error.localizedDescription)")
+        }
+    }
+    
     @IBAction func makeWavegraphButtonAction(_ sender: Any) {
         // 波形データを取得して表示
         if let waveform = getWaveformFromAudioFile() {
@@ -92,10 +192,13 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
             wave = waveform
             reversewave = reversedData
             
-            let waveformView = WaveformView()
-            waveformView.frame = CGRect(x: 0, y: 0, width: 320, height: 200)
-            self.view.addSubview(waveformView)
-            waveformView.waveform = waveform
+            //let waveformView = WaveformView()
+            //waveformView.frame = CGRect(x: 0, y: 0, width: 320, height: 200)
+            //self.view.addSubview(waveformView)
+            //waveformView.waveform = waveform
+            
+            drawChart(y: wave.map { Double($0) })
+            
         } else {
             print("Failed to retrieve waveform data")
         }
@@ -103,23 +206,25 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     }
     
     @IBAction func copyButtonTapped() {
-        // クリップボードにテキストをコピー
-        UIPasteboard.general.string = WaveText.text
-        
         // コピー完了をユーザに知らせるためにアラートを表示
-        let alert = UIAlertController(title: "コピー完了", message: "WaveTextがクリップボードにコピーされました", preferredStyle: .alert)
+        let alert = UIAlertController(title: "indexの比較", message: "録音した配列の長さ：\(wave.count)_録音した配列、またはswipt-sine波の逆配列の長さ：\(reversewave.count)", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
     }
     
     @IBAction func copyButtonTapped2() {
-        // クリップボードにテキストをコピー
-        UIPasteboard.general.string = ReverseWaveText.text
-        
-        // コピー完了をユーザに知らせるためにアラートを表示
-        let alert = UIAlertController(title: "コピー完了", message: "ReverseWaveTextがクリップボードにコピーされました", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        present(alert, animated: true, completion: nil)
+        // reversewaveとwaveの長さを比較
+       if reversewave.count < wave.count {
+           // reversewaveがwaveより短い場合、waveの長さに合わせてデータを補填
+           let diffCount = wave.count - reversewave.count
+           let paddingData: [CGFloat] = Array(repeating: 0.0, count: diffCount)
+           reversewave.append(contentsOf: paddingData)
+           print("reversewaveが短い")
+       } else if reversewave.count > wave.count {
+           // reversewaveがwaveより長い場合、余分なデータを削除
+           //reversewave.removeLast(reversewave.count - wave.count)
+           print("reversewaveが長い")
+       }
     }
     
     @IBAction func startPlaybackButtonAction(_ sender: Any) {
@@ -214,7 +319,7 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     }
     
     func stopMusicFile() {
-        guard let url = Bundle.main.url(forResource: "10", withExtension: "mp3") else { return }
+        guard let url = Bundle.main.url(forResource: "swept_sine", withExtension: "wav") else { return }
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer.delegate = self
