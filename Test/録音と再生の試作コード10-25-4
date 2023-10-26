@@ -4,6 +4,16 @@
 //
 //  Created by 吉田成秀 on 2023/10/16.
 
+/*
+現在の録音設定
+let audioSettings = [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: 48000.0,
+                AVNumberOfChannelsKey: 2,
+                AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
+            ] as [String: Any]
+*/
+
 import Foundation
 import AVFoundation
 import UIKit
