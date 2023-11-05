@@ -12,27 +12,31 @@ import DGCharts
 import Dispatch
 import simd
 import TensorSwift
+import AVFAudio
 
-class FFTController: UIViewController {
+class FFTController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var counter: UILabel!
+    @IBOutlet weak var numberTextField: UITextField!
+    @IBOutlet weak var nyquistTextField: UITextField!
+    
     var chartView: LineChartView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         print("opend!")
         
+        numberTextField.delegate = self
+        nyquistTextField.delegate = self
+        
+        if(chartView != nil){
+            chartView.removeFromSuperview()
+        }
+        
         // グラフ表示の事前準備
         chartView = LineChartView()
         chartView.frame = CGRect(x: 20, y: 20, width: 300, height: 200) // Set frame as needed
         view.addSubview(chartView)
         print("Create the LineChartView end")
-        
-        //エラー回避ようのコード
-        if(wave.count <= 0){
-            wave = [1,1,1,1,1,1,1,1,1,1,1]
-            reversewave = [2,2,2,2,2,2,2,2,2,2,2]
-            print("wave is zero!")
-        }
         
         if(selfMode){//ok!
             selectMode()
@@ -102,23 +106,137 @@ class FFTController: UIViewController {
         ViewNowTime()
     }
     
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        // キーボードを閉じる
+        textField.resignFirstResponder()
+        return true
+    }
+    
+    func loadWavFileAndCreateEnvelope(fileName: String, fileExtension: String, envelopeDuration: TimeInterval) -> [CGFloat]? {
+        if let wavURL = Bundle.main.url(forResource: fileName, withExtension: fileExtension) {
+            do {
+                let audioFile = try AVAudioFile(forReading: wavURL)
+                let format = audioFile.processingFormat
+                let frameCount = UInt32(audioFile.length)
+
+                // サンプルデータを読み込むためのバッファを作成
+                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
+                try audioFile.read(into: buffer!)
+
+                // サンプルデータを[Float]に変換
+                let floatArray = Array(UnsafeBufferPointer(start: buffer!.floatChannelData?[0], count: Int(frameCount)))
+
+                // サンプルデータを逆順に変更
+                let reversedFloatArray = floatArray.reversed()
+
+                // エンベロープのサンプル数を計算
+                let envelopeSampleCount = Int(format.sampleRate * envelopeDuration)
+
+                // エンベロープ用のデータを生成
+                var envelopeArray: [Float] = []
+                for i in 0..<envelopeSampleCount {
+                    let envelopeValue = Float(i) / Float(envelopeSampleCount - 1)
+                    envelopeArray.append(envelopeValue)
+                }
+
+                // エンベロープをWAVデータの長さに合わせる
+                while envelopeArray.count < reversedFloatArray.count {
+                    envelopeArray.append(0.0)
+                }
+
+                // エンベロープを適用
+                let envelopedFloatArray = zip(reversedFloatArray, envelopeArray).map { $0 * $1 }
+
+                // 最終的に[Float]から[CGFloat]へ変換
+                return envelopedFloatArray.map { CGFloat($0) }
+            } catch {
+                print("WAVファイルの読み込みに失敗しました: \(error.localizedDescription)")
+            }
+        } else {
+            print("WAVファイルが見つかりません")
+        }
+
+        return nil
+    }
+    
+    @IBAction func getNumberButtonTapped(_ sender: UIButton) {
+        if let text = numberTextField.text, let number = Int(text) {
+            // UITextFieldから数字を取得
+            windowSize = number
+            print("Window入力された数字は: \(windowSize)")
+        } else {
+            // 数字が無効な場合のエラーハンドリング
+            print("無効な入力です")
+        }
+        
+        if let text = nyquistTextField.text, let number = Int(text) {
+            // UITextFieldから数字を取得
+            nyquist = number
+            print("nyquist入力された数字は: \(nyquist)")
+        } else {
+            // 数字が無効な場合のエラーハンドリング
+            print("無効な入力です")
+        }
+        viewDidLoad()
+    }
+    
     func selectMode(){
         //デバックようのモード
-        print("USED selfMode")
+        print("USED selfMode",convolutionMode1.count,convolutionMode2.count)
         
         var inportwave:[Float] = []
+        var inportwave2:[Complex64] = []
+        
+        if(convolutionMode1 == []){
+            print("convolutionMode1がないのでwaveで補完",convolutionMode1.count)
+            convolutionMode1 = wave
+        }
+        
+        if(convolutionMode2 == []){
+            print("convolutionMode2がないのでreversewaveで補完",convolutionMode2.count)
+            if let envelopedFloatArray = loadWavFileAndCreateEnvelope(fileName: "swept_sine", fileExtension: "wav", envelopeDuration: 5.0) {
+                convolutionMode2 = envelopedFloatArray
+                print("WAVファイルを逆順に変更し、エンベロープを作成しました。",convolutionMode2[100], convolutionMode2[239997])
+            } else {
+                print("WAVファイルの変換に失敗しました。")
+            }
+        }
+        
+        if convolutionMode1.count < convolutionMode2.count {
+            // reversewaveがwaveより短い場合、waveの長さに合わせてデータを補填
+            let diffCount = convolutionMode2.count - convolutionMode1.count
+            let paddingData: [CGFloat] = Array(repeating: 0.0, count: diffCount)
+            convolutionMode1.append(contentsOf: paddingData)
+            print("convolutionMode1が短い")
+        }
+        
+        if convolutionMode2.count < convolutionMode1.count {
+            // reversewaveがwaveより短い場合、waveの長さに合わせてデータを補填
+            let diffCount = convolutionMode1.count - convolutionMode2.count
+            let paddingData: [CGFloat] = Array(repeating: 0.0, count: diffCount)
+            convolutionMode2.append(contentsOf: paddingData)
+            print("convolutionMode2が短い")
+        }
+        
         if(Processing == 0){//ok!
             print("USED FFT")
             
             //print("USED reverse swipt-sine FFT")
             //inportwave = complexToFloatArray(FFT(signal: reversewave.map { Float($0) }))
             
-            print("USED swipt-sine FFT")
-            inportwave = complexToFloatArray(FFT(signal: convolutionMode1.map { Float($0) }))
+            print("USED swipt-sine FFT",convolutionMode1.count)
+            inportwave = convolutionMode1.map { Float($0) }
             
         }else if(Processing == 1){
-            print("USED CFFT")
-            inportwave = (convolutionFFTBlockMulti(signal1: convolutionMode1.map { Float($0) }, signal2: convolutionMode2.map { Float($0) }, blockSize: blockSize))
+            if(convolutionFFTSelect){
+                print("USED CFFT, 畳み込み前FFTなし")
+                inportwave = (convolutionFFTBlockMulti2(signal1: convolutionMode1.map { Float($0) }, signal2: convolutionMode2.map { Float($0) }, blockSize: blockSize))
+            }else{
+                print("USED CFFT",convolutionMode1.count ,convolutionMode2.count)//<
+                print("convolutionMode2",convolutionMode2[100], convolutionMode2[239997])
+                
+                inportwave2 = (convolutionFFTBlockMulti(signal1: convolutionMode1.map { Float($0) }, signal2: convolutionMode2.map { Float($0) }, blockSize: blockSize))
+            }
         }
         
         if(debugGraphMode == 0){
@@ -142,14 +260,25 @@ class FFTController: UIViewController {
         // Set the data for the chart
         chartView.data = data
         }else{
-            print("USED performFFT Graph")
+            print("USED performFFT Graph")//<
             
-            let inputwave:[Double] = performFFT(on: inportwave.map { CGFloat($0) })
+            var inputwave = ifft(fft: inportwave2)
+            inputwave = limitToNyquistFrequency(array: inputwave, samplingFrequency: Float(nyquist))
+
+            // 周波数を計算
+            var frequencies: [Double] = []
+            for i in 0..<inputwave.count {
+                let frequency = Double(i) / Double(inputwave.count) * 48000.0
+                frequencies.append(frequency)
+            }
+
             var entries: [ChartDataEntry] = []
-            for (index, magnitude) in (inputwave).enumerated() {
-                let entry = ChartDataEntry(x: Double(index), y: Double(magnitude))
+            for (index, complex) in (inputwave).enumerated() {
+                let magnitude = sqrt(complex.real * complex.real + complex.imag * complex.imag)
+                let entry = ChartDataEntry(x: frequencies[index], y: Double(magnitude))
                 entries.append(entry)
             }
+
             
             // Create a data set and a data object for the chart
             let dataSet = LineChartDataSet(entries: entries, label: "FFT Magnitudes")
@@ -165,6 +294,119 @@ class FFTController: UIViewController {
         }
     }
     
+    func ifft(fft: [Complex64]) -> [Complex64] {
+        // Normalize the FFT
+        let n = fft.count
+        let norm = 2.0 / Double(n)
+
+        // Calculate the inverse FFT
+        var ifft = [Complex64](repeating: Complex64(0.0, 0.0), count: n)
+        for i in 0 ..< n {
+            ifft[i] = Complex64(fft[i].real * Float(norm), -fft[i].imag * Float(norm))
+        }
+
+        // Shift the spectrum
+        for i in 0 ..< n / 2 {
+            ifft[i] = Complex64(ifft[i].real, ifft[n - i - 1].imag)
+            ifft[n - i - 1] = Complex64(ifft[i].imag, -ifft[n - i - 1].real)
+        }
+
+        // Calculate the magnitude
+        var magnitude = [Complex64](repeating: Complex64(0.0, 0.0), count: n)
+        for i in 0 ..< n {
+            magnitude[i] = Complex64(ifft[i].real * ifft[i].real + ifft[i].imag * ifft[i].imag, 0.0)
+        }
+
+        // Return the magnitude
+        return magnitude
+    }
+    
+    // ナイキスト周波数以上削除
+    func limitToNyquistFrequency(array: [Complex64], samplingFrequency: Float) -> [Complex64] {
+        if(!nyquistMode){
+            let halfIndex = Int(samplingFrequency / 2)
+                var result = array
+            for i in Int(halfIndex)..<array.count {
+                result[i] = Complex64(0.0, 0.0)
+                }
+
+                // ナイキスト周波数以下の周波数の成分を復元
+                for i in 0..<halfIndex {
+                    result[i] = array[i]
+                }
+
+                return result
+        }else{
+            return array
+        }
+    }
+    
+    //ピークを検出し、それ以前を抹消するコード(まだ利用していない。なぜなら用途が意味不明だからである)
+    func detectPeaks(data: [Float], threshold: Float, peakWidth: Int, peakType: String) -> [Float] {
+        var modifiedData = data
+        if peakType == "min" {
+            modifiedData = data.map { $0 > threshold ? threshold : $0 }
+        } else {
+            modifiedData = data.map { $0 < threshold ? threshold : $0 }
+        }
+        
+        var differences = [Float]()
+        for i in 1..<modifiedData.count {
+            differences.append(modifiedData[i] - modifiedData[i - 1])
+        }
+        
+        var productOfDifferences = [Float]()
+        for i in 1..<(differences.count - 1) {
+            productOfDifferences.append(differences[i] * differences[i - 1])
+        }
+        
+        var peakPositions = [Int]()
+        
+        while true {
+            if let minIndex = productOfDifferences.firstIndex(of: 0) {
+                let firstPeakIndex = peakPositions.first ?? -1
+                let distance = abs(minIndex - firstPeakIndex)
+                if distance > peakWidth {
+                    peakPositions.append(minIndex)
+                }
+                productOfDifferences[minIndex] = 1
+            } else {
+                break
+            }
+        }
+        
+        if let firstPeak = peakPositions.first, firstPeak < data.count {
+            let remainingData = Array(data[firstPeak...])
+            return remainingData
+        } else {
+            return data
+        }
+    }
+    
+    @IBOutlet weak var nyquistModeSwitch: UISwitch!
+
+    @IBAction func nyquistModeValueChanged(_ sender: UISwitch) {
+        if sender.isOn {
+            // UISwitchがオンの場合
+            nyquistMode = true
+        } else {
+            // UISwitchがオフの場合
+            nyquistMode = false
+        }
+    }
+    
+    @IBOutlet weak var windowModeSwitch: UISwitch!
+
+    @IBAction func windowModeValueChanged(_ sender: UISwitch) {
+        if sender.isOn {
+            // UISwitchがオンの場合
+            windowMode = true
+        } else {
+            // UISwitchがオフの場合
+            windowMode = false
+        }
+    }
+
     //上画面にグラフを模写するコード
     func DrawGraph(signal: [Double]){
         // Prepare data for the chart
@@ -231,10 +473,44 @@ class FFTController: UIViewController {
     }
     
     //畳み込みFFTのロジック
-    func convolutionFFTBlockMulti(signal1: [Float], signal2: [Float], blockSize: Int) -> [Float] {
+    func convolutionFFTBlockMulti(signal1: [Float], signal2: [Float], blockSize: Int) -> [Complex64] {
+        print("signal1",signal1[100], signal1[239997])
+        print("signal2",signal2[100], signal2[239997])
+        
         // Normal FFT
-        let fft1 = FFT(signal: signal1)
-        let fft2 = FFT(signal: signal2)
+        let fft1 = applyRectangularWindow(signal: signal1, windowSize: windowSize)
+        let fft2 = applyRectangularWindow(signal: signal2, windowSize: windowSize)
+
+        // Overlap add method
+        let overlap = blockSize - 1
+        let convolutionResultSize = signal1.count + signal2.count - overlap
+        var convolutionResult = [Complex64](repeating: Complex64(0.0, 0.0), count: convolutionResultSize)
+        
+        for i in stride(from: 0, to: signal1.count, by: blockSize - overlap) {
+            // Convolution spectrum
+            var convolutionSpectrum = [Complex64](repeating: Complex64(0.0, 0.0), count: blockSize)
+
+            // Convolution spectrum calculation
+            for j in i ..< min(i + blockSize, signal1.count) {
+                convolutionSpectrum[j - i] += Complex64(fft1[i].real * fft2[j].real - fft1[i].imag * fft2[j].imag, fft1[i].real * fft2[j].imag + fft1[i].imag * fft2[j].real)
+            }
+
+            // Inverse FFT
+            let inverseFFT = convolutionSpectrum.map { $0 }
+
+            // Overlap and add
+            for j in 0 ..< inverseFFT.count {
+                convolutionResult[i + j] += inverseFFT[j]
+            }
+        }
+
+        return convolutionResult
+    }
+    
+    func convolutionFFTBlockMulti2(signal1: [Float], signal2: [Float], blockSize: Int) -> [Float] {
+        // Normal FFT
+        let fft1 = signal1
+        let fft2 = signal2
 
         // Overlap add method
         let overlap = blockSize - 1
@@ -247,15 +523,15 @@ class FFTController: UIViewController {
 
             // Convolution spectrum calculation
             for j in i ..< min(i + blockSize, signal1.count) {
-                convolutionSpectrum[j - i] += Complex64(fft1[i].real * fft2[j].real, 0.0)
+                convolutionSpectrum[j - i] += Complex64(fft1[i] * fft2[j], 0.0)
             }
 
             // Inverse FFT
-            let inverseFFT = FFT(signal: convolutionSpectrum.map { $0.real })
+            let inverseFFT = convolutionSpectrum.map { $0.real }
 
             // Overlap and add
             for j in 0 ..< inverseFFT.count {
-                convolutionResult[i + j] += inverseFFT[j].real
+                convolutionResult[i + j] += inverseFFT[j]
             }
         }
 
@@ -322,6 +598,33 @@ class FFTController: UIViewController {
         }
 
         return spectrum
+    }
+    
+    // フィルタリングの際にウィンドウを適用
+    func applyRectangularWindow(signal: [Float], windowSize: Int) -> [Complex64] {
+        if(!windowMode){
+            var spectrum = [Complex64]()
+            
+            for i in stride(from: 0, to: signal.count, by: windowSize) {
+                let endIndex = min(i + windowSize, signal.count)
+                let windowedSignal = Array(signal[i..<endIndex])
+                
+                // フィルタリングの際にウィンドウを適用
+                let windowedSignalWithRectangularWindow = windowedSignal.map { value in
+                    return value * 1.0 // ここで矩形窓を適用 (1.0 は矩形窓の係数)
+                }
+                
+                // 窓関数を適用した信号にFFTを実行
+                let fftResult = FFT(signal: windowedSignalWithRectangularWindow)
+                
+                // FFT結果をspectrumに追加
+                spectrum.append(contentsOf: fftResult)
+            }
+            
+            return spectrum
+        }else{
+            return FFT(signal: signal)
+        }
     }
     
     //ピークを見つけるコード　→ 機能してない
@@ -391,27 +694,28 @@ class FFTController: UIViewController {
 
     //畳み込みFFTを時間領域に戻すコード
     func performFFT(on data: [CGFloat]) -> [Double] {
-            var realPart = [Double](repeating: 0.0, count: data.count)
-            var imaginaryPart = [Double](repeating: 0.0, count: data.count)
-            
-            // Convert CGFloat data to Double
-            for (index, value) in data.enumerated() {
-                realPart[index] = Double(value)
-            }
-            
-            var splitComplex = DSPDoubleSplitComplex(realp: &realPart, imagp: &imaginaryPart)
-            
-            let log2n = vDSP_Length(log2(Double(data.count)))
-            let setup = vDSP_create_fftsetupD(log2n, Int32(FFT_RADIX2))
-            vDSP_fft_zipD(setup!, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
-            vDSP_destroy_fftsetupD(setup)
-            
-            // Calculate magnitudes from real and imaginary parts
-            var magnitudes = [Double](repeating: 0.0, count: data.count)
-            vDSP_zvmagsD(&splitComplex, 1, &magnitudes, 1, vDSP_Length(data.count))
-            
-            return magnitudes
+        var realPart = [Double](repeating: 0.0, count: data.count)
+        var imaginaryPart = [Double](repeating: 0.0, count: data.count)
+
+        // Convert CGFloat data to Double
+        for (index, value) in data.enumerated() {
+            realPart[index] = Double(value)
         }
+
+        var splitComplex = DSPDoubleSplitComplex(realp: &realPart, imagp: &imaginaryPart)
+
+        let log2n = vDSP_Length(log2(Double(data.count)))
+        let setup = vDSP_create_fftsetupD(log2n, Int32(FFT_RADIX2))
+        vDSP_fft_zipD(setup!, &splitComplex, 1, log2n, FFTDirection(FFT_INVERSE))
+        vDSP_destroy_fftsetupD(setup)
+
+        // Calculate magnitudes from real and imaginary parts
+        var magnitudes = [Double](repeating: 0.0, count: data.count)
+        vDSP_zvmagsD(&splitComplex, 1, &magnitudes, 1, vDSP_Length(data.count))
+
+        return magnitudes
+    }
+
 }
 
 //グラフを描写するための継承
