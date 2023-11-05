@@ -26,7 +26,39 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        
+        wave = []
+        reversewave = []
+        Level = false
+        peakMode = true
+        peakDir = false
+        graphMode = true
+        IFFTMode = true
+        blockSize = 2
+        threads = 0
+        selfMode = false
+        envelope_reversedMode = false
+        floatArray = []
+
+        Processing = 0
+        convolutionMode1 = []
+        convolutionMode2 = []
+        FFTProcessing = 0
+        debugGraphMode = 0
+        convolutionMode = 0
+        convolutionModeA = 0
+        convolutionModeB = 0
+        reversefloatArray = []
+        convolutionFFTSelect = false
+
+        windowSize = 1024
+        nyquist = 65000
+        
+        
         setupAudioSession()
+        
+        selfMode = false
         
         guard let wavURL = Bundle.main.url(forResource: "swept_sine", withExtension: "wav") else {
             fatalError("WAVファイルが見つかりません")
@@ -151,7 +183,9 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
     @IBAction func IFFTModeValueChanged2(_ sender: UISwitch) {
         if sender.isOn {
             // UISwitchがオンの場合
+            IFFTMode = true
         } else {
+            IFFTMode = false
             // UISwitchがオフの場合
         }
     }
@@ -208,8 +242,9 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
             
             try audioFile.read(into: buffer!)
             
-            // サンプルデータを[CGFloat]に変換
-            floatArray = Array(UnsafeBufferPointer(start: buffer!.floatChannelData?[0], count: Int(frameCount)))
+            // サンプルデータを[Float]に変換
+            floatArray = padToNextPowerOfTwo(signal: Array(UnsafeBufferPointer(start: buffer!.floatChannelData?[0], count: Int(frameCount))))
+            print("floatArray in swept_sine")
             
             // ここでfloatArrayを使用して必要な処理を行います
             if(IFFTMode){
@@ -218,7 +253,20 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
             }else{
                 reversewave = floatArray.map { CGFloat($0) }
             }
+            
+            if(IFFTMode){
+                // 使用例
+                if let envelopedFloatArray = loadWavFileAndCreateEnvelope(fileName: "swept_sine", fileExtension: "wav", envelopeDuration: 5.0) {
+                    reversewave = envelopedFloatArray
+                    print("WAVファイルを逆順に変更し、エンベロープを作成しました。")
+                } else {
+                    print("WAVファイルの変換に失敗しました。")
+                }
+            }
             print("reversewave.count:",reversewave.count,"wave.count:",wave.count)
+            convolutionMode2 = reversewave
+            
+            wave = resizeArray(wave, toNewSize: 240000)
             
             if reversewave.count < wave.count {
                 // reversewaveがwaveより短い場合、waveの長さに合わせてデータを補填
@@ -236,6 +284,92 @@ class AudioController:  UIViewController, AVAudioRecorderDelegate, AVAudioPlayer
         } catch {
             fatalError("WAVファイルの読み込みに失敗しました: \(error.localizedDescription)")
         }
+    }
+    
+    func resizeArray(_ array: [CGFloat], toNewSize newSize: Int) -> [CGFloat] {
+        if newSize <= 0 {
+            // 新しいサイズが無効な場合、エラー処理などを行う
+            // ここでエラーメッセージを表示またはエラーを処理する
+            return array // エラーの場合は入力の配列をそのまま返す
+        }
+
+        var newArray = array // 入力の配列をコピー
+        let currentSize = newArray.count
+
+        if newSize > currentSize {
+            // 新しいサイズが大きい場合、不足分をゼロで埋める
+            newArray += [CGFloat](repeating: 0.0, count: newSize - currentSize)
+        } else if newSize < currentSize {
+            // 新しいサイズが小さい場合、不要な要素を削除
+            newArray.removeSubrange(newSize..<currentSize)
+        }
+
+        return newArray
+    }
+    
+    func padToNextPowerOfTwo(signal: [Float]) -> [Float] {
+        let originalLength = signal.count
+        
+        // 2のべき乗に切り上げる
+        let nextPowerOfTwo = Int(ceil(log2(Double(originalLength))))
+        
+        // パディング後の長さを計算
+        let paddedLength = 1 << nextPowerOfTwo
+        
+        // パディングを行う
+        var paddedSignal = signal
+        paddedSignal.append(contentsOf: [Float](repeating: 0.0, count: paddedLength - originalLength))
+        
+        return paddedSignal
+    }
+    
+    func loadWavFileAndCreateEnvelope(fileName: String, fileExtension: String, envelopeDuration: TimeInterval) -> [CGFloat]? {
+        if let wavURL = Bundle.main.url(forResource: fileName, withExtension: fileExtension) {
+            do {
+                let audioFile = try AVAudioFile(forReading: wavURL)
+                let format = audioFile.processingFormat
+                let frameCount = UInt32(audioFile.length)
+
+                // サンプルデータを読み込むためのバッファを作成
+                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
+                try audioFile.read(into: buffer!)
+
+                // サンプルデータを[Float]に変換
+                let floatArray = Array(UnsafeBufferPointer(start: buffer!.floatChannelData?[0], count: Int(frameCount)))
+
+                // サンプルデータを逆順に変更
+                let reversedFloatArray = floatArray.reversed()
+
+                // エンベロープのサンプル数を計算
+                let envelopeSampleCount = Int(format.sampleRate * envelopeDuration)
+
+                // エンベロープ用のデータを生成
+                var envelopeArray: [Float] = []
+                for i in 0..<envelopeSampleCount {
+                    let envelopeValue = Float(i) / Float(envelopeSampleCount - 1)
+                    envelopeArray.append(envelopeValue)
+                }
+
+                print(envelopeArray.count)
+                // エンベロープをWAVデータの長さに合わせる
+                while envelopeArray.count < reversedFloatArray.count {
+                    envelopeArray.append(0.0)
+                }
+                print(envelopeArray.count)
+
+                // エンベロープを適用
+                let envelopedFloatArray = zip(reversedFloatArray, envelopeArray).map { $0 * $1 }
+
+                // 最終的に[Float]から[CGFloat]へ変換
+                return envelopedFloatArray.map { CGFloat($0) }
+            } catch {
+                print("WAVファイルの読み込みに失敗しました: \(error.localizedDescription)")
+            }
+        } else {
+            print("WAVファイルが見つかりません")
+        }
+
+        return nil
     }
     
     @IBAction func ValueChanged(_ sender: UISegmentedControl) {
