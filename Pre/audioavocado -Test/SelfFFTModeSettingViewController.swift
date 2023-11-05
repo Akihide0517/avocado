@@ -30,6 +30,9 @@ class SelfFFTModeSettingViewController: UIViewController {
         cosComponentLabel.text = "cosCompo: 0.0"
         frequencyLabel.text = "freq: 0.0"
         
+        convolutionMode1 = []
+        convolutionMode2 = []
+        
         // Create a waveform
         waveform = Waveform(frequency: 100.0, sampleRate: 44100.0, duration: 1.0)
         frequencyTextField.addDoneButton()
@@ -76,6 +79,8 @@ class SelfFFTModeSettingViewController: UIViewController {
             FFTProcessing = 0
         case 1:
             FFTProcessing = 1
+        case 2:
+            FFTProcessing = 2
         default:
             print("存在しない番号")
         }
@@ -100,6 +105,28 @@ class SelfFFTModeSettingViewController: UIViewController {
         case 1:
             convolutionModeB = 1
             convolutionMode2 = reversefloatArray
+            //使用例
+           if let envelopedFloatArray = loadWavFileAndCreateEnvelope(fileName: "swept_sine", fileExtension: "wav", envelopeDuration: 5.0) {
+               convolutionMode2 = envelopedFloatArray
+               print("WAVファイルを逆順に変更し、エンベロープを作成しました。",convolutionMode2[100], convolutionMode2[239997])
+           } else {
+               print("WAVファイルの変換に失敗しました。")
+           }
+            
+            print(convolutionMode2.count)
+        case 2:
+            convolutionModeB = 2
+            var URLName = ""
+            if(!envelope_reversedMode){
+                URLName = "envelope"
+            }else{
+                URLName = "envelope_reversed"
+            }
+            if let wavFloatArray = wavToFloatArray(fileName: URLName, fileExtension: "wav") {
+                convolutionMode2 = wavFloatArray
+            } else {
+                print("WAVファイルの変換に失敗しました。")
+            }
         default:
             print("存在しない番号")
         }
@@ -114,6 +141,101 @@ class SelfFFTModeSettingViewController: UIViewController {
         default:
             print("存在しない番号")
         }
+    }
+    
+    @IBOutlet weak var envelope_reversedSwitch: UISwitch!
+    @IBAction func envelope_reversedValueChanged(_ sender: UISwitch) {
+        if sender.isOn {
+            // UISwitchがオンの場合
+            envelope_reversedMode = true
+        } else {
+            // UISwitchがオフの場合
+            envelope_reversedMode = false
+        }
+    }
+    
+    @IBOutlet weak var convolutionFFTSelectSwitch: UISwitch!
+    @IBAction func convolutionFFTSelectChanged(_ sender: UISwitch) {
+        if sender.isOn {
+            // UISwitchがオンの場合
+            convolutionFFTSelect = true
+        } else {
+            // UISwitchがオフの場合
+            convolutionFFTSelect = false
+        }
+    }
+    
+    func loadWavFileAndCreateEnvelope(fileName: String, fileExtension: String, envelopeDuration: TimeInterval) -> [CGFloat]? {
+        if let wavURL = Bundle.main.url(forResource: fileName, withExtension: fileExtension) {
+            do {
+                let audioFile = try AVAudioFile(forReading: wavURL)
+                let format = audioFile.processingFormat
+                let frameCount = UInt32(audioFile.length)
+
+                // サンプルデータを読み込むためのバッファを作成
+                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
+                try audioFile.read(into: buffer!)
+
+                // サンプルデータを[Float]に変換
+                let floatArray = Array(UnsafeBufferPointer(start: buffer!.floatChannelData?[0], count: Int(frameCount)))
+
+                // サンプルデータを逆順に変更
+                let reversedFloatArray = floatArray.reversed()
+
+                // エンベロープのサンプル数を計算
+                let envelopeSampleCount = Int(format.sampleRate * envelopeDuration)
+
+                // エンベロープ用のデータを生成
+                var envelopeArray: [Float] = []
+                for i in 0..<envelopeSampleCount {
+                    let envelopeValue = Float(i) / Float(envelopeSampleCount - 1)
+                    envelopeArray.append(envelopeValue)
+                }
+
+                // エンベロープをWAVデータの長さに合わせる
+                while envelopeArray.count < reversedFloatArray.count {
+                    envelopeArray.append(0.0)
+                }
+
+                // エンベロープを適用
+                let envelopedFloatArray = zip(reversedFloatArray, envelopeArray).map { $0 * $1 }
+
+                // 最終的に[Float]から[CGFloat]へ変換
+                return envelopedFloatArray.map { CGFloat($0) }
+            } catch {
+                print("WAVファイルの読み込みに失敗しました: \(error.localizedDescription)")
+            }
+        } else {
+            print("WAVファイルが見つかりません")
+        }
+
+        return nil
+    }
+    
+    func wavToFloatArray(fileName: String, fileExtension: String) -> [CGFloat]? {
+        if let wavURL = Bundle.main.url(forResource: fileName, withExtension: fileExtension) {
+            do {
+                let audioFile = try AVAudioFile(forReading: wavURL)
+                let format = audioFile.processingFormat
+                let frameCount = UInt32(audioFile.length)
+
+                // サンプルデータを読み込むためのバッファを作成
+                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
+
+                try audioFile.read(into: buffer!)
+
+                // サンプルデータを[CGFloat]に変換
+                let floatArray = Array(UnsafeBufferPointer(start: buffer!.floatChannelData?[0], count: Int(frameCount)))
+
+                return floatArray.map { CGFloat($0) }
+            } catch {
+                print("WAVファイルの読み込みに失敗しました: \(error.localizedDescription)")
+            }
+        } else {
+            print("WAVファイルが見つかりません")
+        }
+
+        return nil
     }
     
     @IBOutlet weak var sinSlider: UISlider!
@@ -165,7 +287,7 @@ class SelfFFTModeSettingViewController: UIViewController {
             sinComponentLabel.text = "sin: \(waveform.sinComponent)"
             cosComponentLabel.text = "cos: \(waveform.cosComponent)"
             frequencyLabel.text = "freq: \(waveform.Frequency)"
-        }else{
+        }else if(FFTProcessing == 1){
             //FFT
             if(debugGraphMode == 0){
                 let floatsSlice = floatArray
@@ -206,19 +328,131 @@ class SelfFFTModeSettingViewController: UIViewController {
                     graphView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.2) // グラフの高さを設定
                 ])
             }
+        }else{
+            //FFTenvelope
+            if(debugGraphMode == 0){
+                var URLName = ""
+                if(!envelope_reversedMode){
+                    print("envelope")
+                    URLName = "envelope"
+                }else{
+                    print("envelope_reversed")
+                    URLName = "envelope_reversed"
+                }
+                
+                if let wavFloatArray = wavToFloatArray(fileName: URLName, fileExtension: "wav") {
+                    convolutionMode2 = wavFloatArray
+                } else {
+                    print("WAVファイルの変換に失敗しました。")
+                }
+                
+                if(selfMode){
+                    
+                    let complexGraphView = ComplexGraphView()
+                    let complexDataPoints: [Complex64] = FFT(signal: convolutionMode2.map { Float($0) }).limitLength(Int(lengthTextField.text ?? "0.0")!)
+                    complexGraphView.complexDataPoints = complexDataPoints
+                    view.addSubview(complexGraphView)
+                    complexGraphView.translatesAutoresizingMaskIntoConstraints = false
+                    NSLayoutConstraint.activate([
+                        complexGraphView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                        complexGraphView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                        complexGraphView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                        complexGraphView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.2) // グラフの高さを設定
+                    ])
+                }else{
+                    let graphView = PointGraphView()
+                    // map関数でCGFloat型の値を返すようにする
+                    graphView.dataPoints = convolutionMode2
+                    
+                    view.addSubview(graphView)
+                    // グラフの位置やサイズを調整（Auto Layoutを使用する場合）
+                    graphView.translatesAutoresizingMaskIntoConstraints = false
+                    NSLayoutConstraint.activate([
+                        graphView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                        graphView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                        graphView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                        graphView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.2) // グラフの高さを設定
+                    ])
+                }
+                
+                
+                sinComponentLabel.text = "sin: \(waveform.sinComponent)"
+                cosComponentLabel.text = "cos: \(waveform.cosComponent)"
+                frequencyLabel.text = "freq: \(waveform.Frequency)"
+                
+            }else{
+                let graphView = PointGraphView()
+                //var dataPoints: [CGPoint] = []
+                
+                let floatsSlice = floatArray
+                
+                // map関数でCGFloat型の値を返すようにする
+                graphView.dataPoints = toComplex(FFT(signal: floatsSlice).limitLength(Int(lengthTextField.text ?? "0.0")!)).map { CGFloat($0.real) }
+                
+                view.addSubview(graphView)
+                // グラフの位置やサイズを調整（Auto Layoutを使用する場合）
+                graphView.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    graphView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                    graphView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                    graphView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                    graphView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.2) // グラフの高さを設定
+                ])
+            }
         }
         
         if(convolutionMode == 0){
+            print("convolutionMode == 0",convolutionMode1.count)
             if(convolutionModeA == 0){
+                print("A == 0, waveform.complexSamples",convolutionMode1.count)
                 convolutionMode1 = waveform.complexSamples.map { CGFloat($0.real) }
             }else if (convolutionModeA == 1){
-                convolutionMode1 = floatArray.map { CGFloat($0) }
+                if(!envelope_reversedMode){
+                    print("A == 1, floatArray",convolutionMode1.count)
+                    convolutionMode1 = floatArray.map { CGFloat($0) }
+                    if let wavFloatArray = wavToFloatArray(fileName: "swept_sine", fileExtension: "wav") {
+                        convolutionMode1 = wavFloatArray
+                        print(convolutionMode1[1],convolutionMode1[1000],convolutionMode1.count)
+                    } else {
+                        print("WAVファイルの変換に失敗しました。")
+                    }
+                }else{
+                    print("A == 1, envelope_reversed",convolutionMode1.count)
+                    if let wavFloatArray = wavToFloatArray(fileName: "envelope_reversed", fileExtension: "wav") {
+                        convolutionMode1 = wavFloatArray
+                        print(convolutionMode1[1],convolutionMode1[1000])
+                    } else {
+                        print("WAVファイルの変換に失敗しました。")
+                    }
+                }
             }
         }else if(convolutionMode == 1){
+            print("convolutionMode == 1")
             if(convolutionModeB == 0){
+                print("B == 0, waveform.complexSamples")
                 convolutionMode2 = waveform.complexSamples.map { CGFloat($0.real) }
             }else if (convolutionModeB == 1){
+                print("B == 1, reversefloatArray")
                 convolutionMode2 = reversefloatArray
+            }else if (convolutionModeB == 2){
+                print("B == 2")
+                var URLName = ""
+                if(!envelope_reversedMode){
+                    print("envelope")
+                    URLName = "envelope"
+                    convolutionMode1 = floatArray.map { CGFloat($0) }
+                }else{
+                    print("envelope_reversed")
+                    URLName = "envelope_reversed"
+                    convolutionMode1 = floatArray.map { CGFloat($0) }
+                }
+                if let wavFloatArray = wavToFloatArray(fileName: URLName, fileExtension: "wav") {
+                    convolutionMode2 = wavFloatArray
+                    print(convolutionMode2[1],convolutionMode2[1000])
+                } else {
+                    print("WAVファイルの変換に失敗しました。")
+                }
+
             }
         }
     }
