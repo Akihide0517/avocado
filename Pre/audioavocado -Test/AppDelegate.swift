@@ -17,6 +17,7 @@ var IFFTMode: Bool = true
 var blockSize = 2
 var threads = 0
 var selfMode:Bool = false
+var envelope_reversedMode:Bool = false
 var floatArray:[Float] = []
 
 var Processing:Int = 0
@@ -28,6 +29,13 @@ var convolutionMode:Int = 0
 var convolutionModeA:Int = 0
 var convolutionModeB:Int = 0
 var reversefloatArray:[CGFloat] = []
+var convolutionFFTSelect:Bool = false
+
+var windowSize:Int = 4096
+var nyquist:Int = 65000
+
+var nyquistMode: Bool = false
+var windowMode: Bool = false
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
