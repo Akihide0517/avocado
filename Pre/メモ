@@ -386,8 +386,8 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
         let paddedSize = 1 << Int(ceil(log2(Double(signal1.count + signal2.count - 1))))
         
         // Perform FFT on the original signals
-        let fft1 = FFT(signal: BeforePeakSignal1)
-        let fft2 = FFT(signal: BeforePeakSignal2)
+        let fft1 = FFT(signal: BeforePeakSignal1)/**- parameter DefaultValueOfSignalInFft1: signal1 **/
+        let fft2 = FFT(signal: BeforePeakSignal2)/**- parameter DefaultValueOfSignalInFft2 : signal2 **/
 
         // Zero-pad the FFT results to the desired size
         var paddedFFT1 = fft1 + [Complex64](repeating: Complex64(0.0, 0.0), count: paddedSize - fft1.count)
