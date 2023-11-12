@@ -1,0 +1,655 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A37354CD2AFA5FE50014C812 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37354CC2AFA5FE50014C812 /* AppDelegate.swift */; };
+		A37354CF2AFA5FE50014C812 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37354CE2AFA5FE50014C812 /* SceneDelegate.swift */; };
+		A37354D12AFA5FE50014C812 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37354D02AFA5FE50014C812 /* ViewController.swift */; };
+		A37354D42AFA5FE50014C812 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A37354D22AFA5FE50014C812 /* Main.storyboard */; };
+		A37354D62AFA5FE60014C812 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A37354D52AFA5FE60014C812 /* Assets.xcassets */; };
+		A37354D92AFA5FE60014C812 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A37354D72AFA5FE60014C812 /* LaunchScreen.storyboard */; };
+		A37354E42AFA5FE60014C812 /* fftconvolveTestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37354E32AFA5FE60014C812 /* fftconvolveTestTests.swift */; };
+		A37354EE2AFA5FE60014C812 /* fftconvolveTestUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37354ED2AFA5FE60014C812 /* fftconvolveTestUITests.swift */; };
+		A37354F02AFA5FE60014C812 /* fftconvolveTestUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37354EF2AFA5FE60014C812 /* fftconvolveTestUITestsLaunchTests.swift */; };
+		A37354FE2AFA6EE50014C812 /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = A37354FD2AFA6EE50014C812 /* DGCharts */; };
+		A37355002AFA6FEC0014C812 /* swept_sine.wav in Resources */ = {isa = PBXBuildFile; fileRef = A37354FF2AFA6FEC0014C812 /* swept_sine.wav */; };
+		A374AC952AFBF9FE00FC2AAD /* GraphViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A374AC942AFBF9FE00FC2AAD /* GraphViewController.swift */; };
+		A374AC992AFD28E600FC2AAD /* extended_sweep_sound.wav in Resources */ = {isa = PBXBuildFile; fileRef = A374AC982AFD28E600FC2AAD /* extended_sweep_sound.wav */; };
+		A374AC9D2AFE7A7600FC2AAD /* KMeansController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A374AC9C2AFE7A7600FC2AAD /* KMeansController.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A37354E02AFA5FE60014C812 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A37354C12AFA5FE50014C812 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A37354C82AFA5FE50014C812;
+			remoteInfo = fftconvolveTest;
+		};
+		A37354EA2AFA5FE60014C812 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A37354C12AFA5FE50014C812 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A37354C82AFA5FE50014C812;
+			remoteInfo = fftconvolveTest;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A37354C92AFA5FE50014C812 /* fftconvolveTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = fftconvolveTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A37354CC2AFA5FE50014C812 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A37354CE2AFA5FE50014C812 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		A37354D02AFA5FE50014C812 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		A37354D32AFA5FE50014C812 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		A37354D52AFA5FE60014C812 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A37354D82AFA5FE60014C812 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		A37354DA2AFA5FE60014C812 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A37354DF2AFA5FE60014C812 /* fftconvolveTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fftconvolveTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A37354E32AFA5FE60014C812 /* fftconvolveTestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = fftconvolveTestTests.swift; sourceTree = "<group>"; };
+		A37354E92AFA5FE60014C812 /* fftconvolveTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fftconvolveTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A37354ED2AFA5FE60014C812 /* fftconvolveTestUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = fftconvolveTestUITests.swift; sourceTree = "<group>"; };
+		A37354EF2AFA5FE60014C812 /* fftconvolveTestUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = fftconvolveTestUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		A37354FF2AFA6FEC0014C812 /* swept_sine.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = swept_sine.wav; path = "../../audioavocado -Test/swept_sine.wav"; sourceTree = "<group>"; };
+		A374AC942AFBF9FE00FC2AAD /* GraphViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphViewController.swift; sourceTree = "<group>"; };
+		A374AC982AFD28E600FC2AAD /* extended_sweep_sound.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = extended_sweep_sound.wav; path = "../../audioavocado -Test/extended_sweep_sound.wav"; sourceTree = "<group>"; };
+		A374AC9C2AFE7A7600FC2AAD /* KMeansController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KMeansController.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A37354C62AFA5FE50014C812 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A37354FE2AFA6EE50014C812 /* DGCharts in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A37354DC2AFA5FE60014C812 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A37354E62AFA5FE60014C812 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A37354C02AFA5FE50014C812 = {
+			isa = PBXGroup;
+			children = (
+				A37354CB2AFA5FE50014C812 /* fftconvolveTest */,
+				A37354E22AFA5FE60014C812 /* fftconvolveTestTests */,
+				A37354EC2AFA5FE60014C812 /* fftconvolveTestUITests */,
+				A37354CA2AFA5FE50014C812 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A37354CA2AFA5FE50014C812 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A37354C92AFA5FE50014C812 /* fftconvolveTest.app */,
+				A37354DF2AFA5FE60014C812 /* fftconvolveTestTests.xctest */,
+				A37354E92AFA5FE60014C812 /* fftconvolveTestUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A37354CB2AFA5FE50014C812 /* fftconvolveTest */ = {
+			isa = PBXGroup;
+			children = (
+				A374AC982AFD28E600FC2AAD /* extended_sweep_sound.wav */,
+				A37354FF2AFA6FEC0014C812 /* swept_sine.wav */,
+				A37354CC2AFA5FE50014C812 /* AppDelegate.swift */,
+				A37354CE2AFA5FE50014C812 /* SceneDelegate.swift */,
+				A37354D02AFA5FE50014C812 /* ViewController.swift */,
+				A37354D22AFA5FE50014C812 /* Main.storyboard */,
+				A37354D52AFA5FE60014C812 /* Assets.xcassets */,
+				A37354D72AFA5FE60014C812 /* LaunchScreen.storyboard */,
+				A37354DA2AFA5FE60014C812 /* Info.plist */,
+				A374AC942AFBF9FE00FC2AAD /* GraphViewController.swift */,
+				A374AC9C2AFE7A7600FC2AAD /* KMeansController.swift */,
+			);
+			path = fftconvolveTest;
+			sourceTree = "<group>";
+		};
+		A37354E22AFA5FE60014C812 /* fftconvolveTestTests */ = {
+			isa = PBXGroup;
+			children = (
+				A37354E32AFA5FE60014C812 /* fftconvolveTestTests.swift */,
+			);
+			path = fftconvolveTestTests;
+			sourceTree = "<group>";
+		};
+		A37354EC2AFA5FE60014C812 /* fftconvolveTestUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A37354ED2AFA5FE60014C812 /* fftconvolveTestUITests.swift */,
+				A37354EF2AFA5FE60014C812 /* fftconvolveTestUITestsLaunchTests.swift */,
+			);
+			path = fftconvolveTestUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A37354C82AFA5FE50014C812 /* fftconvolveTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A37354F32AFA5FE60014C812 /* Build configuration list for PBXNativeTarget "fftconvolveTest" */;
+			buildPhases = (
+				A37354C52AFA5FE50014C812 /* Sources */,
+				A37354C62AFA5FE50014C812 /* Frameworks */,
+				A37354C72AFA5FE50014C812 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = fftconvolveTest;
+			packageProductDependencies = (
+				A37354FD2AFA6EE50014C812 /* DGCharts */,
+			);
+			productName = fftconvolveTest;
+			productReference = A37354C92AFA5FE50014C812 /* fftconvolveTest.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A37354DE2AFA5FE60014C812 /* fftconvolveTestTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A37354F62AFA5FE60014C812 /* Build configuration list for PBXNativeTarget "fftconvolveTestTests" */;
+			buildPhases = (
+				A37354DB2AFA5FE60014C812 /* Sources */,
+				A37354DC2AFA5FE60014C812 /* Frameworks */,
+				A37354DD2AFA5FE60014C812 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A37354E12AFA5FE60014C812 /* PBXTargetDependency */,
+			);
+			name = fftconvolveTestTests;
+			productName = fftconvolveTestTests;
+			productReference = A37354DF2AFA5FE60014C812 /* fftconvolveTestTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A37354E82AFA5FE60014C812 /* fftconvolveTestUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A37354F92AFA5FE60014C812 /* Build configuration list for PBXNativeTarget "fftconvolveTestUITests" */;
+			buildPhases = (
+				A37354E52AFA5FE60014C812 /* Sources */,
+				A37354E62AFA5FE60014C812 /* Frameworks */,
+				A37354E72AFA5FE60014C812 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A37354EB2AFA5FE60014C812 /* PBXTargetDependency */,
+			);
+			name = fftconvolveTestUITests;
+			productName = fftconvolveTestUITests;
+			productReference = A37354E92AFA5FE60014C812 /* fftconvolveTestUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A37354C12AFA5FE50014C812 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A37354C82AFA5FE50014C812 = {
+						CreatedOnToolsVersion = 15.0.1;
+					};
+					A37354DE2AFA5FE60014C812 = {
+						CreatedOnToolsVersion = 15.0.1;
+						TestTargetID = A37354C82AFA5FE50014C812;
+					};
+					A37354E82AFA5FE60014C812 = {
+						CreatedOnToolsVersion = 15.0.1;
+						TestTargetID = A37354C82AFA5FE50014C812;
+					};
+				};
+			};
+			buildConfigurationList = A37354C42AFA5FE50014C812 /* Build configuration list for PBXProject "fftconvolveTest" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A37354C02AFA5FE50014C812;
+			packageReferences = (
+				A37354FC2AFA6EE50014C812 /* XCRemoteSwiftPackageReference "Charts" */,
+			);
+			productRefGroup = A37354CA2AFA5FE50014C812 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A37354C82AFA5FE50014C812 /* fftconvolveTest */,
+				A37354DE2AFA5FE60014C812 /* fftconvolveTestTests */,
+				A37354E82AFA5FE60014C812 /* fftconvolveTestUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A37354C72AFA5FE50014C812 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A37354D92AFA5FE60014C812 /* LaunchScreen.storyboard in Resources */,
+				A374AC992AFD28E600FC2AAD /* extended_sweep_sound.wav in Resources */,
+				A37354D62AFA5FE60014C812 /* Assets.xcassets in Resources */,
+				A37354D42AFA5FE50014C812 /* Main.storyboard in Resources */,
+				A37355002AFA6FEC0014C812 /* swept_sine.wav in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A37354DD2AFA5FE60014C812 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A37354E72AFA5FE60014C812 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A37354C52AFA5FE50014C812 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A37354D12AFA5FE50014C812 /* ViewController.swift in Sources */,
+				A374AC952AFBF9FE00FC2AAD /* GraphViewController.swift in Sources */,
+				A374AC9D2AFE7A7600FC2AAD /* KMeansController.swift in Sources */,
+				A37354CD2AFA5FE50014C812 /* AppDelegate.swift in Sources */,
+				A37354CF2AFA5FE50014C812 /* SceneDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A37354DB2AFA5FE60014C812 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A37354E42AFA5FE60014C812 /* fftconvolveTestTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A37354E52AFA5FE60014C812 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A37354EE2AFA5FE60014C812 /* fftconvolveTestUITests.swift in Sources */,
+				A37354F02AFA5FE60014C812 /* fftconvolveTestUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A37354E12AFA5FE60014C812 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A37354C82AFA5FE50014C812 /* fftconvolveTest */;
+			targetProxy = A37354E02AFA5FE60014C812 /* PBXContainerItemProxy */;
+		};
+		A37354EB2AFA5FE60014C812 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A37354C82AFA5FE50014C812 /* fftconvolveTest */;
+			targetProxy = A37354EA2AFA5FE60014C812 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		A37354D22AFA5FE50014C812 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A37354D32AFA5FE50014C812 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		A37354D72AFA5FE60014C812 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A37354D82AFA5FE60014C812 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		A37354F12AFA5FE60014C812 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A37354F22AFA5FE60014C812 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A37354F42AFA5FE60014C812 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AW6MUAZ9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = fftconvolveTest/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = VER01.fftconvolveTest;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A37354F52AFA5FE60014C812 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AW6MUAZ9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = fftconvolveTest/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = VER01.fftconvolveTest;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A37354F72AFA5FE60014C812 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AW6MUAZ9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = VER01.fftconvolveTestTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/fftconvolveTest.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/fftconvolveTest";
+			};
+			name = Debug;
+		};
+		A37354F82AFA5FE60014C812 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AW6MUAZ9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = VER01.fftconvolveTestTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/fftconvolveTest.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/fftconvolveTest";
+			};
+			name = Release;
+		};
+		A37354FA2AFA5FE60014C812 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AW6MUAZ9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = VER01.fftconvolveTestUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = fftconvolveTest;
+			};
+			name = Debug;
+		};
+		A37354FB2AFA5FE60014C812 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AW6MUAZ9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = VER01.fftconvolveTestUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = fftconvolveTest;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A37354C42AFA5FE50014C812 /* Build configuration list for PBXProject "fftconvolveTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A37354F12AFA5FE60014C812 /* Debug */,
+				A37354F22AFA5FE60014C812 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A37354F32AFA5FE60014C812 /* Build configuration list for PBXNativeTarget "fftconvolveTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A37354F42AFA5FE60014C812 /* Debug */,
+				A37354F52AFA5FE60014C812 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A37354F62AFA5FE60014C812 /* Build configuration list for PBXNativeTarget "fftconvolveTestTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A37354F72AFA5FE60014C812 /* Debug */,
+				A37354F82AFA5FE60014C812 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A37354F92AFA5FE60014C812 /* Build configuration list for PBXNativeTarget "fftconvolveTestUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A37354FA2AFA5FE60014C812 /* Debug */,
+				A37354FB2AFA5FE60014C812 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A37354FC2AFA6EE50014C812 /* XCRemoteSwiftPackageReference "Charts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/danielgindi/Charts.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A37354FD2AFA6EE50014C812 /* DGCharts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A37354FC2AFA6EE50014C812 /* XCRemoteSwiftPackageReference "Charts" */;
+			productName = DGCharts;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A37354C12AFA5FE50014C812 /* Project object */;
+}
