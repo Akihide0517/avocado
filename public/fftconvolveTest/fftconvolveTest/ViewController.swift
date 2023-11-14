@@ -25,7 +25,6 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
      - EnvelopeMode : エンベロープするかどうか
      - SetEssEnvelopeMode : 逆ESSエンベロープ固定するかどうか
      - SetZeroPaddingMode : ENV固定時に0.5秒の誤差修正範囲を再生前後に設定するかどうか
-     - PeakMode : IFFTの結果を切り抜いてFFTするかどうか
      - FileMode : ファイルを選択したかどうか
      - isRecording : レコードしているかどうか
      */
@@ -39,7 +38,6 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
     var EnvelopeMode:Bool = false
     var SetEssEnvelopeMode:Bool = false
     var SetZeroPaddingMode:Bool = false
-    var PeakMode: Bool = false
     var FileMode:Bool = false
     
     var isRecording = false
@@ -67,65 +65,12 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
         if(FileMode){
             music = selectArray
             reverseMusic = reverseFloatArray(floatArray: selectArray)
-            
-            if(EnvelopeMode){
-                reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
-                print("エンベロープになりました")
-            }
-            
-            else if(SetEssEnvelopeMode){
-                let ESS = loadWavAudioFileToCGFloatArray(filePath: "swept_sine")
-                var size = ESS!.count
-                
-                if(!SetZeroPaddingMode){
-                    size += (24000*2)//swept_sineの要素数は24万、虚空0.5sの要素数は2万4千
-                }else{
-                    print("FileMode:size虚空なし")
-                }
-                
-                music = increaseArraySize(music, to: size)
-                
-                reverseMusic = reverseFloatArray(floatArray: ESS!)
-                reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
-                
-                if(!SetZeroPaddingMode){
-                    reverseMusic = extendWithZeros(inputArray: reverseMusic, count: 24000)
-                }
-                print("エンベロープ固定")
-            }
+            makeEnvelopeForUserFile()
         }else{
             if let floatArray = loadWavAudioFileToCGFloatArray(filePath: filePath) {
                 music = floatArray
                 reverseMusic = reverseFloatArray(floatArray: floatArray)
-                
-                if(EnvelopeMode){
-                    reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
-                    print("エンベロープになりました")
-                }
-                
-                else if(SetEssEnvelopeMode){
-                    let ESS = loadWavAudioFileToCGFloatArray(filePath: "swept_sine")
-                    var size = ESS!.count
-                    
-                    if(!SetZeroPaddingMode){
-                        size += (24000*2)//swept_sineの要素数は24万、虚空0.5sの要素数は2万4千
-                    }else{
-                        print("size虚空なし")
-                        if let floatArray2 = loadWavAudioFileToCGFloatArray(filePath: "swept_sine") {
-                            music = floatArray2
-                        }
-                    }
-                    
-                    music = increaseArraySize(music, to: size)
-                    
-                    reverseMusic = reverseFloatArray(floatArray: ESS!)
-                    reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
-                    
-                    if(!SetZeroPaddingMode){
-                        reverseMusic = extendWithZeros(inputArray: reverseMusic, count: 24000)
-                    }
-                    print("エンベロープ固定")
-                }
+                makeEnvelopeForESS()
             } else {
                 print("Failed to load audio file")
             }
@@ -136,18 +81,8 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
         resultConvolution = convolutionFFTBlock(signal1: music, signal2: reverseMusic)//Complex64:周波数領域
         resultIfftConvolution = inverseFFT(complexSignal: resultConvolution)//Float：時間領域
         
-        if(PeakMode){
-            print("切り抜き",Debug2)
-            var windowSize:Int = 8192
-            if(Debug2){
-            windowSize = 4192
-            }
-            
-            let PeakIndex: Int = findPeakIndex(signal: resultIfftConvolution)!//ピークの算出
-            var removeElementsResultIfftConvolution =  removeElementsBeforePeak(signal: resultIfftConvolution, peakIndex: PeakIndex)//ピーク以前の削除
-            removeElementsResultIfftConvolution = removeElementsAfterIndex(array: removeElementsResultIfftConvolution, count: windowSize)//8192以降の削除
-            resultConvolution = FFT(signal: removeElementsResultIfftConvolution)//FFT
-        }
+        //横軸を周波数に合わせる
+        adjustHorizontalAxisToFrequency()
         
         print("畳み込みの実行と逆フーリエ変換終了",resultConvolution[0], resultConvolution.count, resultConvolution[resultConvolution.count-1], resultIfftConvolution[0], resultIfftConvolution.count, resultIfftConvolution[resultIfftConvolution.count-1])
         
@@ -155,6 +90,7 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
         drawGraph(signal: resultIfftConvolution.map { Double($0) })
         print("グラフ化処理終了")
         
+        //波形の保存
         SetResult(complexResult: resultConvolution, TimeResult: resultIfftConvolution)
         print("Setter Done!")
     }
@@ -221,16 +157,7 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
         return nil
     }
     
-    /** 使用例
-    if let filePath = "your_audio_file_path.wav" {
-        if let floatArray = loadWavAudioFileToCGFloatArray(filePath: filePath) {
-            // floatArrayに音声データが格納されています
-        } else {
-            print("Failed to load audio file")
-        }
-    }*/
-
-    // MARK: - 信号をいじるコード
+    // MARK: - 以下信号をいじるコード群
     
     /**
      [Float]を逆配列にするメソッド
@@ -303,6 +230,85 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
         
         print("要素の前後に０パディング", extendedArray.count)
         return extendedArray
+    }
+    
+    // MARK: - ユーザが”SetEssEnvelopeMode”をオンにした状態でswept_sineからエンベロープを作成するメソッド
+    func makeEnvelopeForUserFile(){
+        if(EnvelopeMode){
+            reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
+            print("エンベロープになりました")
+        }
+        
+        else if(SetEssEnvelopeMode){
+            let ESS = loadWavAudioFileToCGFloatArray(filePath: "swept_sine")
+            var size = ESS!.count
+            
+            if(!SetZeroPaddingMode){
+                size += (24000*2)//swept_sineの要素数は24万、虚空0.5sの要素数は2万4千
+            }else{
+                print("FileMode:size虚空なし")
+            }
+            
+            music = increaseArraySize(music, to: size)
+            
+            reverseMusic = reverseFloatArray(floatArray: ESS!)
+            reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
+            
+            if(!SetZeroPaddingMode){
+                reverseMusic = extendWithZeros(inputArray: reverseMusic, count: 24000)
+            }
+            print("エンベロープ固定")
+        }
+    }
+    
+    // MARK: - ユーザが”SetEssEnvelopeMode”をオフにした状態でswept_sineからエンベロープを作成するメソッド
+    func makeEnvelopeForESS(){
+        if(EnvelopeMode){
+            reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
+            print("エンベロープになりました")
+        }
+        
+        else if(SetEssEnvelopeMode){
+            let ESS = loadWavAudioFileToCGFloatArray(filePath: "swept_sine")
+            var size = ESS!.count
+            
+            if(!SetZeroPaddingMode){
+                size += (24000*2)//swept_sineの要素数は24万、虚空0.5sの要素数は2万4千
+            }else{
+                print("size虚空なし")
+                if let floatArray2 = loadWavAudioFileToCGFloatArray(filePath: "swept_sine") {
+                    music = floatArray2
+                }
+            }
+            
+            music = increaseArraySize(music, to: size)
+            
+            reverseMusic = reverseFloatArray(floatArray: ESS!)
+            reverseMusic = generateEnvelope(waveform: reverseMusic, samplingRate: 48000, fStart: 10, fEnd: 24000)
+            
+            if(!SetZeroPaddingMode){
+                reverseMusic = extendWithZeros(inputArray: reverseMusic, count: 24000)
+            }
+            print("エンベロープ固定")
+        }
+    }
+    
+    // MARK: - 周波数軸の波形の横軸のメモリを周波数に合わせるためのメソッド
+    func adjustHorizontalAxisToFrequency(){
+        if(PeakMode){
+            print("切り抜き",Debug2)
+            var windowSize:Int = 8192
+            if(Debug2){
+            windowSize = 4192
+            }
+            
+            let PeakIndex: Int = findPeakIndex(signal: resultIfftConvolution)!//ピークの算出
+            var removeElementsResultIfftConvolution =  removeElementsBeforePeak(signal: resultIfftConvolution, peakIndex: PeakIndex)//ピーク以前の削除
+            removeElementsResultIfftConvolution = removeElementsAfterIndex(array: removeElementsResultIfftConvolution, count: windowSize)//8192以降の削除
+            resultConvolution = FFT(signal: removeElementsResultIfftConvolution)//FFT
+            
+            resultIfftConvolution = getSurroundingValues(inputArray: resultIfftConvolution, peakIndex: PeakIndex, surroundingCount: 6000)//時間領域のインパルスのピーク周辺の取得
+        }
     }
     
     // MARK: - 以下FFTを用いた畳み込みに必要なコード群
@@ -466,6 +472,24 @@ class ViewController: UIViewController, UIDocumentPickerDelegate, AVAudioRecorde
         }
 
         return Array(array.prefix(count))
+    }
+    
+    /**
+     指定した数の指定した分の入力配列の周辺を取得するメソッド
+     - parameter inputArray: 時間領域の信号を受け取ります
+     - parameter peakIndex: 周辺の配列を取得するための、中心のインデックス
+     - parameter surroundingCount: peakIndexに対してその周辺から取得したい数を指定する
+     - returns: 変換結果を返します
+    */
+    func getSurroundingValues(inputArray: [Float], peakIndex: Int, surroundingCount: Int) -> [Float] {
+        // ピークの位置を確認し、範囲を決定します
+        let lowerBound = max(0, peakIndex - surroundingCount)
+        let upperBound = min(inputArray.count - 1, peakIndex + surroundingCount)
+        
+        // 範囲内の要素を取得します
+        let surroundingValues = Array(inputArray[lowerBound...upperBound])
+        
+        return surroundingValues
     }
     
     // MARK: - Setter
