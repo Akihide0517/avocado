@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Display</title>
+</head>
+<body>
+    <h1>Latest PCA 3D Scatter Plot</h1>
+    {% if image_file %}
+        <img src="/{{ image_file }}" alt="PCA 3D Scatter Plot">
+    {% else %}
+        <p>No image available</p>
+    {% endif %}
+</body>
+</html>
