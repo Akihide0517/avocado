@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+import pickle
+import pandas as pd
+import webbrowser
+import sys
+from flask import Flask, render_template, url_for
+from datetime import datetime
+import cgi
+from PIL import Image, ImageDraw, ImageFont
+import os
+import html
+import json
+import numpy as np
+from scipy.io import wavfile
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from mpl_toolkits.mplot3d import Axes3D
+import random
+import firebase_admin
+from firebase_admin import credentials, firestore
+import subprocess
+
+print("Content-Type: text/html\n")
+print()
+pca = PCA(n_components=3)
+
+# Firebase Admin SDKを初期化
+# ホームディレクトリのパスを取得
+cred = credentials.Certificate("/var/www/hac-it-ai-gcp-sweptsine-firebase-adminsdk-3wkiy-6dd823ffed.json")
+firebase_admin.initialize_app(cred)
+
+# Firestoreのインスタンスを作成
+db = firestore.client()
+
+# 保存先ディレクトリ
+save_directory = "/save"
+
+png_filename = "/"
+
+# 保存ディレクトリが存在しない場合、作成
+if not os.path.exists(save_directory):
+    os.makedirs(save_directory)
+
+# フォームからデータを取得
+form = cgi.FieldStorage()
+input_text = html.escape(form.getvalue('input_text', 'Hello from Python!'))  # サニタイズ
+selected_collections = html.escape(form.getvalue('selected_collections', ''))  # サニタイズ
+
+# input_textを分割してplaseリストに格納
+plase = [item.strip() for item in selected_collections.split(",") if item.strip()]
+
+# 各コレクションを処理
+for collection_name in plase:
+    # コレクションを取得
+    collection_ref = db.collection(collection_name)
+    docs = collection_ref.stream()
+
+    # 保存用の辞書を作成
+    collection_data = {}
+
+    for doc in docs:
+        # ドキュメント内の 'floatArray' フィールドを取得
+        doc_data = doc.to_dict()
+        if 'floatArray' in doc_data:
+            # signal1, signal2, ... として辞書に追加
+            collection_data[doc.id] = doc_data['floatArray']
+
+    # 結果をJSONファイルとして保存
+    json_file_path = os.path.join(save_directory, f"{collection_name}.json")
+    with open(json_file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(collection_data, json_file, ensure_ascii=False, indent=4)
+
+    print(f"Data from collection '{collection_name}' has been saved to {json_file_path}")
+
+# 保存先ディレクトリ
+save_directory = "/save"
+
+# file_namesを初期化
+file_names = []
+
+# saveディレクトリ内のファイルを取得
+for file_name in os.listdir(save_directory):
+    if file_name.endswith(".json"):  # JSONファイルのみを対象
+        file_path = os.path.join(save_directory, file_name)
+        file_names.append(file_path)
+
+# JSONファイルを読み込み、結果を格納する関数
+def load_json_files(file_names):
+    result_dict = {}
+    print("1")
+    for file_name in file_names:
+        print("+")
+        with open(file_name, 'r') as file:
+            data = json.load(file)
+        result_dict[file_name] = data
+    print("2")
+    return result_dict
+
+# エンベロープ生成関数
+def generate_envelope(waveform, sampling_rate, f_start, f_end):
+    waveform = waveform[::-1]  # 波形を逆順に
+    max_amplitude = np.max(waveform) if len(waveform) > 0 else 0.0
+    t_max = len(waveform) / sampling_rate
+    scale_factor = pow(f_end / f_start, 1.0 / t_max) / t_max
+    envelope = waveform * max_amplitude * scale_factor
+    envelope = np.pad(envelope, (24000, 24000), mode='constant')  # 24000個のゼロパディング
+    return envelope
+
+# FFT処理を行う関数
+def process_signals(json_data, env, sample_rate):
+    FFT_list = []
+    dates = []
+    signal_names = []
+
+    for date, data in json_data.items():
+        if isinstance(data, dict):
+            for signal_name, signal_data in data.items():
+                max_value = np.max(np.abs(signal_data))
+                normalized_signal = signal_data / max_value
+                abs_max_index = np.argmax(np.abs(normalized_signal))
+                cropped_data = normalized_signal[abs_max_index: abs_max_index + 8192]
+                convolved_signal = np.convolve(cropped_data, env, mode='same')
+                fft_result = np.fft.fft(convolved_signal)
+                fft_result_quarter = np.abs(fft_result[:len(fft_result) // 4])
+                FFT_list.append(fft_result_quarter)
+                dates.append(date)
+                signal_names.append(signal_name)
+                print(len(FFT_list))
+    return FFT_list, dates, signal_names
+
+# 主成分分析と3Dプロットを行う関数
+def perform_pca_and_plot(FFT_list, dates, signal_names):
+    matrix = np.array(FFT_list)
+    scaler = StandardScaler()
+    matrix_standardized = scaler.fit_transform(matrix)
+    pca_result = pca.fit_transform(matrix)
+    
+    #pca_result = pca.transform(matrix)
+    
+    # PCAモデルを保存
+    with open('/save_pkl/pca_model.pkl', 'wb') as f:
+        pickle.dump(pca, f)
+    
+    print("PCAモデルが保存されました。")
+    
+    # PCA結果をCSVファイルに保存
+    pca_df = pd.DataFrame(pca_result, columns=['PC1', 'PC2', 'PC3'])
+    pca_df['Date'] = dates
+    pca_df['Signal Name'] = signal_names
+    csv_file_path = "/save_predict/pca_results.csv"
+    pca_df.to_csv(csv_file_path, index=False)
+    print(f"PCA results saved to {csv_file_path}")
+
+    # ここに既存のプロット処理や表示処理を追加
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    colors = ['red', 'green', 'blue', 'magenta', 'yellow', 'cyan', 'orange', 'purple', 'pink', 'brown', 'black', 'white', 'gray', 'lime', 'navy', 'teal', 'violet', 'indigo', 'gold', 'silver', 'coral', 'turquoise', 'maroon', 'olive', 'beige', 'chocolate', 'lavender', 'salmon', 'ivory', 'khaki', 'plum', 'mint', 'peach', 'azure']
+    markers = ['o', 's', '^', 'D', 'v']
+
+    for i in range(len(pca_result)):
+        color_index = i % len(colors)
+        marker_index = i % len(markers)
+        ax.scatter(pca_result[i, 0], pca_result[i, 1], pca_result[i, 2],
+                   color=colors[color_index], marker=markers[marker_index])
+
+        if i % 4 == 0 and i // 4 < len(file_names):
+            label = os.path.basename(file_names[i // 4])
+            ax.text(pca_result[i, 0], pca_result[i, 1], pca_result[i, 2], label, size=10)
+
+    ax.set_title('PCA: FFT Components (3D)')
+    ax.set_xlabel('First Principal Component')
+    ax.set_ylabel('Second Principal Component')
+    ax.set_zlabel('Third Principal Component')
+    ax.grid(True)
+    ax.legend()
+    user_ip = os.environ.get('REMOTE_ADDR')
+    png_filename = f'/var/www/html/pca_3d_scatter_{user_ip}.png'
+    plt.savefig(png_filename, format='png')
+    plt.show()
+    # 開きたいHTMLファイルのパスを指定
+    html_file_path = os.path.abspath('/var/www/html/test.html')
+
+    # ブラウザでHTMLファイルを開く
+    webbrowser.open(f'file://{html_file_path}')
+    # 生成した画像を表示するHTMLコードを作成
+    html_output = f'''
+    <html>
+    <head><title>PCA Result</title></head>
+    <body>
+    <h1>Learning result</h1>
+    <img src="/pca_3d_scatter_{user_ip}.png" alt="Generated Image">
+    <a href="{html_file_path}">Open test.html</a>
+    </body>
+    </html>
+    '''
+    
+    # HTTPヘッダーとコンテンツを出力
+    print("Content-Type: text/html\n")
+    print(html_output)
+    
+    dleteFile()
+    print(read_data())
+    
+# select.pyを実行
+    
+    try:
+        subprocess.run(["/usr/lib/cgi-bin/select.py"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing select.py: {e}")
+
+def read_data():
+    # 新しい場所をリストにする
+    new_place = [input_text]
+    
+    for collection_name in new_place:
+        collection_ref = db.collection(collection_name)
+        docs = collection_ref.stream()
+
+        collection_data = {}
+
+        for doc in docs:
+            doc_data = doc.to_dict()
+            if 'floatArray' in doc_data:
+                collection_data[doc.id] = doc_data['floatArray']
+
+        json_file_path = os.path.join(save_directory, f"{collection_name}.json")
+        try:
+            with open(json_file_path, 'w', encoding='utf-8') as json_file:
+                json.dump(collection_data, json_file, ensure_ascii=False, indent=4)
+            print(f"Saved JSON to: {json_file_path}")
+        except IOError as e:
+            print(f"Error writing file: {e}")
+
+    # 音声データの読み込み
+    sound_file_path = '/home/g023c1133/swept_sine.wav'
+    try:
+        sample_rate, sound_data = wavfile.read(sound_file_path)
+        env = generate_envelope(sound_data.astype(float), sample_rate, 10, 24000)
+    except Exception as e:
+        print(f"Error reading sound file: {e}")
+        return  # エラーが発生した場合は処理を中断
+
+    # JSONファイルの読み込み
+    json_file_path = f"/save/{input_text}.json"
+    print(f"read-pass: {json_file_path}")
+
+    
+    try:
+        print(f"read-pass-try: {json_file_path}")
+
+        result_dict = {}
+        print("+")
+        with open(json_file_path, 'r') as file:
+            data = json.load(file)
+        result_dict[file_name] = data
+        print("2")
+
+        FFT_list, dates, signal_names = process_signals(result_dict, env, sample_rate)
+        print("one,")
+
+        # FFT_list, dates, signal_namesを/new_dataに保存
+        fft_list_as_lists = [fft_array.tolist() for fft_array in FFT_list]
+
+        # すべての配列をリストに変換
+        new_data = {
+            "FFT_list": fft_list_as_lists,
+            "dates": dates,
+            "signal_names": signal_names
+        }
+        
+        print("two,")
+
+        new_data_file_path = ("/new_data/new_data.json")
+        # JSON形式で保存
+        with open(new_data_file_path, 'w') as f:
+            json.dump(fft_list_as_lists, f, indent=4)
+        print(f"Saved new data to: {new_data_file_path}")
+
+    except Exception as e:
+        print(f"Error processing signals: {e}")
+
+    
+    """
+    # 学習済みデータ（FFT_list）に基づきPCAと類似データの推論
+    scaler = StandardScaler()
+    FFT_matrix = np.array(FFT_list)
+    scaler.fit(FFT_matrix)
+    pca = PCA(n_components=3)
+    pca_result_list = pca.fit_transform(scaler.transform(FFT_matrix))
+    
+    # 推論
+    closest_index, closest_distance = predict_new_data_position(FFT_list, new_data_fft_abs, scaler, pca)
+    
+    # 推論結果の表示
+    print("Content-Type: text/html\n")
+    print(f"The closest data point is at index {closest_index} with a distance of {closest_distance}.")
+    print(f"Corresponding date: {dates[closest_index]}, signal name: {signal_names[closest_index]}")
+
+    return "The closest data point is at index {closest_index} with a distance of {closest_distance}."
+    """
+
+# メイン処理
+def main():
+    json_data = load_json_files(file_names)
+
+    # 波形データを読み込む
+    sound_file_path = '/home/g023c1133/swept_sine.wav'
+    sample_rate, sound_data = wavfile.read(sound_file_path)
+    env = generate_envelope(sound_data.astype(float), sample_rate, 10, 24000)
+    FFT_list, dates, signal_names = process_signals(json_data, env, sample_rate)
+    perform_pca_and_plot(FFT_list, dates, signal_names)
+
+print("Content-Type: text/html")  # ヘッダー
+print()  # ヘッダーとボディの間には空行が必要
+
+def dleteFile():
+    # 保存先ディレクトリ
+    save_directory = "/save"
+    
+    # 保存先ディレクトリが存在する場合、ファイルを削除
+    if os.path.exists(save_directory):
+        for filename in os.listdir(save_directory):
+            file_path = os.path.join(save_directory, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)  # ファイルを削除
+                    print(f"Deleted: {file_path}")
+                elif os.path.isdir(file_path):
+                    os.rmdir(file_path)  # ディレクトリを削除（空である必要があります）
+                    print(f"Deleted directory: {file_path}")
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
+    else:
+        print(f"The directory {save_directory} does not exist.")
+
+
+# 新しいデータのPCA変換と最も近いデータの推論を行う関数
+def predict_new_data_position(FFT_list, new_data_fft, scaler, pca):
+    # 新しいデータを標準化
+    new_data_standardized = scaler.transform([new_data_fft])
+    
+    # 新しいデータをPCAに変換
+    new_data_pca = pca.transform(new_data_standardized)
+
+    # 各FFTデータのPCA結果とのユークリッド距離を計算
+    distances = [euclidean(new_data_pca[0], pca_result) for pca_result in pca_result_list]
+    
+    # 最も近いデータのインデックスを取得
+    closest_index = np.argmin(distances)
+    
+    return closest_index, distances[closest_index]
+
+
+if __name__ == "__main__":
+    main()
