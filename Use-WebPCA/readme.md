@@ -8,6 +8,8 @@
 ・Flask
 ・Apache2
 
+Use-WebPCA/var/www/htmlの中身はご自身で書いてください。（そのまま公開すると危険だからやりたく無いだけです）
+
 参考文献
 
 https://qiita.com/Bashi50/items/30065e8f54f7e8038323
