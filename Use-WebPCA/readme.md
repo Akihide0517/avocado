@@ -3,7 +3,7 @@
 
 使用しているフレームワークとソフトウェア
 
-### バージョンに注意して使ってください(を参照)
+### バージョンに注意して使ってください(Use-WebPCA/usr/lib/cgi-bin/requirements.txtを参照)
 
 ・Flask
 ・Apache2
